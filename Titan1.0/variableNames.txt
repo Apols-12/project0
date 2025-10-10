@@ -1,0 +1,12 @@
+conv1d_2_conv1d_kernel
+conv1d_2_conv1d_bias
+dense_4_dense_kernel
+dense_4_dense_bias
+dense_5_dense_kernel
+dense_5_dense_bias
+dense_6_dense_kernel
+dense_6_dense_bias
+dense_7_dense_kernel
+dense_7_dense_bias
+dense_8_dense_kernel
+dense_8_dense_bias
