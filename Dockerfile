@@ -14,7 +14,8 @@ FROM openjdk:23-jdk
 
 WORKDIR /app
 
-COPY src ./src
+COPY image.jpg .
+COPY Titan1.0 .
 COPY myh2db.mv.db .
 COPY --from=build /app/build/libs/myaws-all.jar .
 EXPOSE 5000
