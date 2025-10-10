@@ -198,7 +198,7 @@ fun main() {
                         call.respond(runningBoots)
                     }
                 }
-                get("/simple-page") {
+                get("/") {
                     call.respondHtml {
                         head {
                             title = "simple page"
