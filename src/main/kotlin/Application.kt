@@ -1,7 +1,9 @@
 package com.apols
 
 
+import com.apols.dataOp.UserInsert
 import com.apols.dataOp.Users
+import com.apols.dataOp.insertUser
 import com.apols.dataOp.verifyUser
 import com.apols.model.BackgrounWork
 import com.apols.model.BotConfig
@@ -59,6 +61,7 @@ fun main() {
     transaction {
         SchemaUtils.create(Users)
     }
+    insertUser(UserInsert("apollinaire", "Guinabadi2@", "apolsng@gmail.com"))
     val networkService = NetworkService()
     val service = BotService(networkService)
     val botService = BotManager(service)
