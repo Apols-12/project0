@@ -35,8 +35,8 @@ fun ResultRow.toUser() = User(
 fun getUser(name: String): User? {
     try {
         val user = transaction {
-            Users.select(Users.name, Users.id, Users.name, Users.password)
-                .single { it[Users.name] == name }.toUser()
+            Users.selectAll()
+                .where { Users.name eq name }.singleOrNull()?.toUser()
         }
         return user
     } catch (e: ExposedSQLException) {
