@@ -50,7 +50,7 @@ fun insertUser(user: UserInsert) {
     transaction {
         val singedPassword = sing(user.password, user.name)
         val isNotAvaileble = Users.selectAll().where { Users.name eq user.name }.count() > 0
-        if (isNotAvaileble) {
+        if (!isNotAvaileble) {
             Users.insert {
                 it[name] = user.name
                 it[password] = singedPassword
