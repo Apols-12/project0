@@ -35,6 +35,7 @@ dependencies {
     implementation("io.ktor:ktor-client-core:3.2.0")
     implementation("io.ktor:ktor-client-cio:3.2.0")
     implementation("io.ktor:ktor-server-rate-limit:3.2.0")
+    implementation("org.jetbrains.exposed:exposed-java-time:1.0.0-beta-5")
     implementation("io.ktor:ktor-client-content-negotiation:3.2.0")
     implementation("dev.whyoleg.cryptography:cryptography-core:0.5.0")
     implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.5.0")

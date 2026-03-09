@@ -46,7 +46,7 @@ data class Kline(
 
 @Serializable
 data class BotConfig(
-    val userId: String,
+    val botName: String,
     val symbol: String,
     val qty: String,
     val apiKey: String,

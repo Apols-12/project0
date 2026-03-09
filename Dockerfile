@@ -10,7 +10,7 @@ COPY gradle.properties .
 COPY src ./src
 RUN gradle shadowJar
 
-FROM openjdk:23-jdk
+FROM mosipdev/openjdk-21-jdk
 
 WORKDIR /app
 

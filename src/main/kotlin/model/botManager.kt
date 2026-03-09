@@ -22,19 +22,19 @@ class BotManager(private val service: BotService) {
     }
 
     fun startBot(config: BotConfig) {
-        stopBot(config.userId)
-        activeBots[config.userId] = scope.launch {
+        stopBot(config.botName)
+        activeBots[config.botName] = scope.launch {
             while (isActive) {
                 try {
                     service.start(config)
                     delay(300000)
                 } catch (e: CancellationException) {
                     // We will create a function to notify the user about this event
-                    logger.info("[${config.userId}] Bot stopped gracefully")
+                    logger.info("[${config.botName}] Bot stopped gracefully")
                     throw e
                 } catch (e: Exception) {
                     // Also notify the user about this event
-                    logger.warn("And exception happen for bot:${config.userId} with exc: ${e.message}")
+                    logger.warn("And exception happen for bot:${config.botName} with exc: ${e.message}")
                 }
             }
         }

@@ -34,8 +34,8 @@ class BotService(val candles: NetworkService) {
             val features = wFeatures.map { it.toFloat() }.toFloatArray()
             val predict = entry.predict(features)
             val dir = direction[predict].toString()
-            val currentPosition = position[config.userId]
-            logger.info("The Model prediction for user ${config.userId} is: $dir and it current position is: $currentPosition")
+            val currentPosition = position[config.botName]
+            logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
             when {
                 currentPosition == null -> {
@@ -47,7 +47,7 @@ class BotService(val candles: NetworkService) {
                         demo = config.demo,
                         quantity = config.qty
                     )
-                    position[config.userId] = predict
+                    position[config.botName] = predict
                 }
                 predict == 0 && currentPosition != 0 -> {
                     if (currentPosition == 1) {
@@ -68,7 +68,7 @@ class BotService(val candles: NetworkService) {
                             demo = config.demo,
                             quantity = config.qty
                         )
-                        position[config.userId] = 0
+                        position[config.botName] = 0
                     }
                 }
                 predict == 1 && currentPosition != 1 -> {
@@ -89,7 +89,7 @@ class BotService(val candles: NetworkService) {
                         demo = config.demo,
                         quantity = config.qty
                     )
-                    position[config.userId] = 1
+                    position[config.botName] = 1
                 }
                 else -> {
                     logger.info("No need Change position for the moment")

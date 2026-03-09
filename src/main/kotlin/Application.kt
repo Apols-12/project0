@@ -1,8 +1,9 @@
 package com.apols
 
 
-import com.apols.dataOp.UserTable
+import com.apols.dataOp.Users
 import com.apols.dataOp.verifyUser
+import com.apols.model.BackgrounWork
 import com.apols.model.BotConfig
 import com.apols.model.BotManager
 import com.apols.model.BotService
@@ -35,9 +36,10 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import io.ktor.server.sessions.SessionTransportTransformerEncrypt
 import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.cookie
-import io.ktor.server.sessions.maxAge
+import io.ktor.util.hex
 import kotlinx.html.body
 import kotlinx.html.div
 import kotlinx.html.h1
@@ -50,27 +52,38 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import kotlin.time.Duration.Companion.seconds
+
 
 fun main() {
     Database.connect("jdbc:h2:./myh2db", driver = "org.h2.Driver")
     transaction {
-        SchemaUtils.create(UserTable)
+        SchemaUtils.create(Users)
     }
     val networkService = NetworkService()
     val service = BotService(networkService)
     val botService = BotManager(service)
-    embeddedServer(Netty, port = 5000, "0.0.0.0") {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 5000
+    val baseUrl = System.getenv("BASE_URL") ?: "https://server_1apols.com/health"
+    val background = BackgrounWork(baseUrl)
+
+    embeddedServer(Netty, port = port, "0.0.0.0") {
 
         install(CORS) {
             anyHost()
             allowHeader(HttpHeaders.ContentType)
             allowHeader(HttpHeaders.Authorization)
         }
+
         install(Sessions) {
-            cookie<UserSession>("user_session") {
+            cookie<UserSession>("auth_session") {
                 cookie.path = "/"
-                cookie.maxAge = 50.seconds
+                cookie.maxAgeInSeconds = 24 * 60 * 60 // 24 hours
+                transform(
+                    SessionTransportTransformerEncrypt(
+                        hex("00112233445566778899aabbccddeeff"),
+                        hex("6819b57a326945c1968f45236589")
+                    )
+                )
             }
         }
         install(Authentication) {
@@ -98,6 +111,9 @@ fun main() {
                 call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError )
             }
         }
+
+        background.start()
+
         module()
         configureTemplating()
         routing {
@@ -111,11 +127,11 @@ fun main() {
                                 required = true
                                 example("default") {
                                     value = BotConfig(
-                                        userId = "477823fasnai",
+                                        botName = "477823fasnai",
                                         symbol = "SOLUSDT",
                                         qty = "4",
-                                        apiKey = "hP29Pu1yKfdRcXgjrl",
-                                        secretKey = "ohiDnLEbHlDUgnupSOpcQ1qFgFoxG3Xjvoay",
+                                        apiKey = "6Q3j13eRvRHJMiID4U",
+                                        secretKey = "OZgqxbGdaQv9cHACFnNXoqF0l1KCT6owtgGV",
                                         longPeriod = 26,
                                         interval = "15",
                                         shortPeriod = 12,
@@ -140,7 +156,7 @@ fun main() {
                             val botConfig = call.receive<BotConfig>()
                             botService.startBot(botConfig)
                             call.respondText("The bot started successfully", status = HttpStatusCode.OK)
-                            log.info("${botConfig.userId} bot started successfully")
+                            log.info("${botConfig.botName} bot started successfully")
                         } catch (e: Exception) {
                             // Notify the user
                             e.printStackTrace()
@@ -149,10 +165,10 @@ fun main() {
                         }
                     }
 
-                    get("/stop{userid?}", {
+                    get("/stop{bot-name?}", {
                         description = "Stop the bot"
                         request {
-                            queryParameter<String>("userid") {
+                            queryParameter<String>("bot-name") {
                                 description = "The boot id you want to stop"
                                 example("default") {
                                     value = "477823fasnai"
@@ -171,7 +187,7 @@ fun main() {
                             }
                         }
                     }) {
-                        val id = call.parameters["userid"]
+                        val id = call.parameters["bot-name"]
                         if (botService.botStatus.keys.contains(id)) {
                             botService.stopBot(id!!)
                             call.respondText("Boot stoped successfully", status = HttpStatusCode.OK)
@@ -217,6 +233,13 @@ fun main() {
                     }
                 }
             }
+
+            get("/health") {
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+        monitor.subscribe(ApplicationStopping) {
+            background.stop()
         }
     }.start(wait = true)
 }
@@ -237,7 +260,7 @@ fun Application.module() {
                 defaultSecuritySchemeNames("MySecurityScheme")
                 defaultUnauthorizedResponse {
                     description = "Username or password is invalid"
-                    body<AuthRequired>() {
+                    body<AuthRequired> {
                         description = "Return this for unauthenticated call"
                     }
                 }
