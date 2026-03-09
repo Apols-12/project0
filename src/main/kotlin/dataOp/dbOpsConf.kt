@@ -54,6 +54,7 @@ fun insertUser(user: UserInsert) {
             Users.insert {
                 it[name] = user.name
                 it[password] = singedPassword
+                it[email] = user.email
             }
         } else {
             return@transaction
