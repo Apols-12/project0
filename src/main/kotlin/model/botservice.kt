@@ -14,7 +14,7 @@ class BotService(val candles: NetworkService) {
     suspend fun start(config: BotConfig) {
         mutex.withLock {
             val data = candles.getKline(
-                baseUrl = "https://api.bybit.com/v5/market/kline",
+                baseUrl = "https://api.bybit-tr.com/v5/market/kline",
                 symbol = config.symbol,
                 interval = config.interval,
                 limit = 1000
