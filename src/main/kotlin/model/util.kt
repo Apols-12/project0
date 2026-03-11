@@ -8,7 +8,9 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
@@ -126,6 +128,7 @@ class NetworkService {
         }
 // this is the actual request to the server
         val klineResponse = client.get(baseUrl) {
+            contentType(ContentType.Application.Json)
             parameter("category", category)
             parameter("symbol", symbol)
             parameter("interval", interval)
