@@ -272,7 +272,7 @@ fun Application.module() {
                 description = "Development server"
             }
             server {
-                url = "apolsng.com"
+                url = "https://project0-5zk7.onrender.com"
                 description = "production domain"
             }
         }
