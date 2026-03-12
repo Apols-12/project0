@@ -49,3 +49,12 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }
+
+tasks {
+    shadowJar {
+        manifest {
+            attributes(Pair("Main-Class", "com.apols.ApplicationKt"))
+            attributes(Pair("Implementation-Version", "1.15"))
+        }
+    }
+}
