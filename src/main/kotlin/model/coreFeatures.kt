@@ -97,7 +97,7 @@ class CoreFeature(private val klines: List<Kline>) {
     //This is how to load a KotlinDl model to make prediction
     fun predict(data: FloatArray): Int {
         var prediction: Int
-        TensorFlowInferenceModel.load(File("./Titan1.0"))
+        TensorFlowInferenceModel.load(File("/Titan1.0"))
             .use {
                 it.reshape(20,5)
                 prediction = it.predict(data)
