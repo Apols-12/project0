@@ -7,38 +7,49 @@ import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
 
 class BotService(val candles: NetworkService) {
-    val position =  mutableMapOf<String, Int>()
-    val mutex = Mutex()
+
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig) {
-        mutex.withLock {
-            val data = candles.getKline(
-                baseUrl = "https://api.bybit.com/v5/market/kline",
-                symbol = config.symbol,
-                interval = config.interval,
-                limit = 1000
-            )
-            val entry = CoreFeature(data)
+    suspend fun start(config: BotConfig, currentPosition: Int?): Int? {
 
-            val kline = entry.enhanceKline(config.longPeriod, config.shortPeriod)
-            val process = entry.processed(kline).zScoreNorm()
+        val data = candles.getKline(
+            baseUrl = "https://api.bybit.com/v5/market/kline",
+            symbol = config.symbol,
+            interval = config.interval,
+            limit = 1000
+        )
+        val entry = CoreFeature(data)
 
-            val direction = mapOf(
-                0 to "Buy",
-                1 to "Sell",
-                2 to "Neutral"
-            )
+        val kline = entry.enhanceKline(config.longPeriod, config.shortPeriod)
+        val process = entry.processed(kline).zScoreNorm()
 
-            val wFeatures = process.takeLast(20).flatten()
-            val features = wFeatures.map { it.toFloat() }.toFloatArray()
-            val predict = entry.predict(features)
-            val dir = direction[predict].toString()
-            val currentPosition = position[config.botName]
-            logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
+        val direction = mapOf(
+            0 to "Buy",
+            1 to "Sell",
+            2 to "Neutral"
+        )
 
-            when {
-                currentPosition == null -> {
+        val wFeatures = process.takeLast(20).flatten()
+        val features = wFeatures.map { it.toFloat() }.toFloatArray()
+        val predict = entry.predict(features)
+        val dir = direction[predict].toString()
+
+        logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
+
+        when {
+            currentPosition == null -> {
+                entry.placeOrder(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    demo = config.demo,
+                    quantity = config.qty
+                )
+                return predict
+            }
+            predict == 0 && currentPosition != 0 -> {
+                if (currentPosition == 1) {
                     entry.placeOrder(
                         apiKey = config.apiKey,
                         secret = config.secretKey,
@@ -47,31 +58,7 @@ class BotService(val candles: NetworkService) {
                         demo = config.demo,
                         quantity = config.qty
                     )
-                    position[config.botName] = predict
-                }
-                predict == 0 && currentPosition != 0 -> {
-                    if (currentPosition == 1) {
-                        entry.placeOrder(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            side = dir,
-                            symbol = config.symbol,
-                            demo = config.demo,
-                            quantity = config.qty
-                        )
-                        delay(10000)
-                        entry.placeOrder(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            side = dir,
-                            symbol = config.symbol,
-                            demo = config.demo,
-                            quantity = config.qty
-                        )
-                        position[config.botName] = 0
-                    }
-                }
-                predict == 1 && currentPosition != 1 -> {
+                    delay(10000)
                     entry.placeOrder(
                         apiKey = config.apiKey,
                         secret = config.secretKey,
@@ -80,21 +67,34 @@ class BotService(val candles: NetworkService) {
                         demo = config.demo,
                         quantity = config.qty
                     )
-                    delay(1000)
-                    entry.placeOrder(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = dir,
-                        symbol = config.symbol,
-                        demo = config.demo,
-                        quantity = config.qty
-                    )
-                    position[config.botName] = 1
-                }
-                else -> {
-                    logger.info("No need Change position for the moment")
+                    return predict
                 }
             }
+            predict == 1 && currentPosition != 1 -> {
+                entry.placeOrder(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    demo = config.demo,
+                    quantity = config.qty
+                )
+                delay(1000)
+                entry.placeOrder(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    demo = config.demo,
+                    quantity = config.qty
+                )
+                return predict
+            }
+            else -> {
+                logger.info("No need Change position for the moment")
+                return currentPosition
+            }
         }
+        return null
     }
 }
