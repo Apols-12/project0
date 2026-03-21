@@ -14,6 +14,7 @@ import mu.KotlinLogging
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
+import kotlin.time.Duration.Companion.minutes
 
 class BotManager(private val service: BotService) {
     private val activeBots = ConcurrentHashMap<String, Job>()
@@ -25,18 +26,18 @@ class BotManager(private val service: BotService) {
         if (it.value.isActive) "Running" else "Stopped"
     }
 
-    fun startBot(config: BotConfig) {
-        stopBot(config.botName)
-        activeBots[config.botName] = scope.launch {
-            while (isActive) {
-                mutex.withLock {
+    suspend fun startBot(config: BotConfig) {
+        mutex.withLock {
+            stopBot(config.botName)
+            activeBots[config.botName] = scope.launch {
+                while (isActive) {
                     try {
                         val currentPosition = position[config.botName]
                         val newPosition = service.start(config, currentPosition)
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
                         }
-                        delay(300000)
+                        delay(10.minutes)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event
                         logger.info("[${config.botName}] Bot stopped gracefully")
@@ -45,7 +46,6 @@ class BotManager(private val service: BotService) {
                         // Also notify the user about this event
                         logger.warn("And exception happen for bot:${config.botName} with exc: ${e.message}")
                     }
-
                 }
             }
         }
