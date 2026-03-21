@@ -117,7 +117,6 @@ fun main() {
         background.start()
 
         module()
-        configureTemplating()
         routing {
             authenticate {
                 route("/bot") {
@@ -216,24 +215,10 @@ fun main() {
                         call.respond(runningBoots)
                     }
                 }
-                get("/") {
-                    call.respondHtml {
-                        head {
-                            title = "simple page"
-                            link(rel = "stylesheet", href = "/styles1.css", type = "text/css")
+            }
 
-                        }
-                        body {
-                            h1(classes = "page-title") {
-                                +"Hello from Ktor!"
-                            }
-                            
-                            div("image") {
-                                img(src = "/image", classes = "img")
-                            }
-                        }
-                    }
-                }
+            get("/") {
+                call.respondText("The bot api is running, only me can access it", status = HttpStatusCode.OK)
             }
 
             get("/health") {
