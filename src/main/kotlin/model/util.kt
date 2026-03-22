@@ -127,13 +127,16 @@ class NetworkService {
             }
         }
 // this is the actual request to the server
-        val klineResponse = client.get(baseUrl) {
-            contentType(ContentType.Application.Json)
-            parameter("category", category)
-            parameter("symbol", symbol)
-            parameter("interval", interval)
-            parameter("limit", limit)
-            parameter("end", Clock.System.now().toEpochMilliseconds())
+        val klineResponse = client.use {
+            it.get(baseUrl) {
+                contentType(ContentType.Application.Json)
+                parameter("category", category)
+                parameter("symbol", symbol)
+                parameter("interval", interval)
+                parameter("limit", limit)
+                parameter("end", Clock.System.now().toEpochMilliseconds())
+            }
+
         }
         // Get information about the rate limit and make sure it doesn't get banned
         val rateLimitRemaining = klineResponse.headers["X-Bapi-Limit-Status"]?.toLongOrNull() ?: 1
