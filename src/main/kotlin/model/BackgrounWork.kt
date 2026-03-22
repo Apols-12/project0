@@ -45,9 +45,7 @@ class BackgrounWork (private val baseUrl: String) {
         scope.launch {
             while (isActive) {
                 try {
-                   val response = client.use {
-                       it.get("$baseUrl/health")
-                   }
+                   val response = client.get("$baseUrl/health")
                     logger.info("the server is up: ${response.status}")
                     delay(10.minutes)
                 } catch (e: Exception) {
