@@ -2,8 +2,6 @@ package com.apols.model
 
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
 
 class BotService(val candles: NetworkService) {
@@ -29,7 +27,7 @@ class BotService(val candles: NetworkService) {
             2 to "Neutral"
         )
 
-        val wFeatures = process.takeLast(20).flatten()
+        val wFeatures = process.windowed(20, 1).map { it.flatten() }.takeLast(1).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
         val predict = entry.predict(features)
         val dir = direction[predict].toString()
