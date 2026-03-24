@@ -16,9 +16,14 @@ import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktoropenapi.post
 import io.github.smiley4.ktorswaggerui.swaggerUI
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
@@ -26,9 +31,7 @@ import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.basic
 import io.ktor.server.engine.*
-import io.ktor.server.html.respondHtml
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.receive
@@ -41,13 +44,6 @@ import io.ktor.server.sessions.SessionTransportTransformerEncrypt
 import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.cookie
 import io.ktor.util.hex
-import kotlinx.html.body
-import kotlinx.html.div
-import kotlinx.html.h1
-import kotlinx.html.head
-import kotlinx.html.img
-import kotlinx.html.link
-import kotlinx.html.title
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -60,13 +56,32 @@ fun main() {
     transaction {
         SchemaUtils.create(Users)
     }
+
+    val client = HttpClient(CIO) {
+        install(HttpRequestRetry) {
+            maxRetries = 5
+            retryOnExceptionIf { _, cause ->
+                cause is ServerResponseException && cause.response.status == HttpStatusCode.TooManyRequests
+            }
+            exponentialDelay()
+        }
+        install(ContentNegotiation) {
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                    this@HttpClient.expectSuccess = true
+                }
+            )
+        }
+    }
     insertUser(UserInsert("apollinaire", "Guinabadi2@", "apolsng@gmail.com"))
-    val networkService = NetworkService()
+    val networkService = NetworkService(client)
     val service = BotService(networkService)
     val botService = BotManager(service)
     val port = System.getenv("PORT")?.toIntOrNull() ?: 5000
     val baseUrl = System.getenv("BASE_URL") ?: "https://server_1apols.com/health"
-    val background = BackgrounWork(baseUrl)
+    val background = BackgrounWork(baseUrl, client)
 
     embeddedServer(Netty, port = port, "0.0.0.0") {
 
@@ -100,7 +115,7 @@ fun main() {
             }
         }
 
-        install(ContentNegotiation) {
+        install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
             json(
                 Json {
                     ignoreUnknownKeys = true

@@ -19,27 +19,10 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import kotlin.time.Duration.Companion.minutes
 
-class BackgrounWork (private val baseUrl: String) {
+class BackgrounWork (private val baseUrl: String, private val client: HttpClient) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val logger = KotlinLogging.logger("back_ground_logs")
-    private val client = HttpClient(CIO) {
-        install(HttpRequestRetry) {
-            maxRetries = 5
-            retryOnExceptionIf { _, cause ->
-                cause is ServerResponseException && cause.response.status == HttpStatusCode.TooManyRequests
-            }
-            exponentialDelay()
-        }
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                    this@HttpClient.expectSuccess = true
-                }
-            )
-        }
-    }
+
 
     fun start() {
         scope.launch {

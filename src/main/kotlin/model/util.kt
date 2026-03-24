@@ -91,7 +91,7 @@ fun List<List<Double>>.zScoreNorm(): List<List<Double>> {
     }
 }
 
-class NetworkService {
+class NetworkService(private val client: HttpClient) {
 
     fun format(time: Long): String {
         val pattern = "yyyy-MM-dd HH:mm:ss"
@@ -108,27 +108,9 @@ class NetworkService {
         interval: String,
         limit: Int
     ): List<Kline> {
-        val client = HttpClient(CIO) {
-            install(HttpRequestRetry) {
-                maxRetries = 5
-                retryOnExceptionIf { _, cause ->
-                    cause is ServerResponseException && cause.response.status == HttpStatusCode.TooManyRequests
-                }
-                exponentialDelay()
-            }
-            install(ContentNegotiation) {
-                json(
-                    Json {
-                        ignoreUnknownKeys = true
-                        isLenient = true
-                        this@HttpClient.expectSuccess = true
-                    }
-                )
-            }
-        }
-// this is the actual request to the server
-        val klineResponse = client.use {
-            it.get(baseUrl) {
+
+        // this is the actual request to the server
+        val klineResponse = client.get(baseUrl) {
                 contentType(ContentType.Application.Json)
                 parameter("category", category)
                 parameter("symbol", symbol)
@@ -137,7 +119,7 @@ class NetworkService {
                 parameter("end", Clock.System.now().toEpochMilliseconds())
             }
 
-        }
+
         // Get information about the rate limit and make sure it doesn't get banned
         val rateLimitRemaining = klineResponse.headers["X-Bapi-Limit-Status"]?.toLongOrNull() ?: 1
         val rateLimitReset = klineResponse.headers["X-Bapi-Limit-Reset-Timestamp"]?.toLongOrNull()?: 1
