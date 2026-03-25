@@ -37,7 +37,7 @@ class BotManager(private val service: BotService) {
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
                         }
-                        delay(10.minutes)
+                        delay(5.minutes)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event
                         logger.info("[${config.botName}] Bot stopped gracefully")
