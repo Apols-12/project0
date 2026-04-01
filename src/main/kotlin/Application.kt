@@ -146,10 +146,10 @@ fun main() {
                                         botName = "477823fasnai",
                                         symbol = "SOLUSDT",
                                         qty = "4",
-                                        apiKey = "6Q3j13eRvRHJMiID4U",
-                                        secretKey = "OZgqxbGdaQv9cHACFnNXoqF0l1KCT6owtgGV",
+                                        apiKey = "J8QbxjasCNfIZ1mSc1",
+                                        secretKey = "TnxQDH4RG19E7MgCPbaVJIL36aZMh8fWIu6l",
                                         longPeriod = 26,
-                                        interval = "15",
+                                        interval = "30",
                                         shortPeriod = 12,
                                         demo = true
                                     )
@@ -266,14 +266,6 @@ fun Application.module() {
                         description = "Return this for unauthenticated call"
                     }
                 }
-            }
-            server {
-                url = "http://localhost:5000"
-                description = "Development server"
-            }
-            server {
-                url = "https://project0-efd8.onrender.com"
-                description = "production domain"
             }
         }
         route("api.json") {
