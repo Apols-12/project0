@@ -143,7 +143,7 @@ fun main() {
                                 required = true
                                 example("default") {
                                     value = BotConfig(
-                                        botName = "477823fasnai",
+                                        botName = "apols_bot",
                                         symbol = "SOLUSDT",
                                         qty = "4",
                                         apiKey = "J8QbxjasCNfIZ1mSc1",
