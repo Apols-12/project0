@@ -91,15 +91,15 @@ class CoreFeature(private val klines: List<Kline>) {
     }
 
     fun processed(data: List<TKlines>): List<List<Double>> {
-        return data.map { listOf(it.change, it.delta, it.emaDiff, it.diffEma) }
+        return data.map { listOf(it.change, it.changePtc, it.delta, it.emaDiff, it.diffEma) }
     }
 
     //This is how to load a KotlinDl model to make prediction
     fun predict(data: FloatArray): Int {
         var prediction: Int
-        TensorFlowInferenceModel.load(File("src/main/resources/monster1.0"))
+        TensorFlowInferenceModel.load(File("src/main/resources/scalper_pro"))
             .use {
-                it.reshape(5, 4)
+                it.reshape(5)
                 prediction = it.predict(data)
             }
         return prediction

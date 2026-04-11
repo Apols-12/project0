@@ -27,7 +27,7 @@ class BotService(val candles: NetworkService) {
             2 to "Neutral"
         )
 
-        val wFeatures = process.takeLast(5).flatten()
+        val wFeatures = process.takeLast(1).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
         val predict = entry.predict(features)
         val dir = direction[predict].toString()
