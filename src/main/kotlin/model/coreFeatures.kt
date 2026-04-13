@@ -1,10 +1,17 @@
 package com.apols.model
 
 import com.bybit.api.client.config.BybitApiConfig
+import com.bybit.api.client.domain.CategoryType
+import com.bybit.api.client.domain.position.TpslMode
+import com.bybit.api.client.domain.position.request.PositionDataRequest
+import com.bybit.api.client.domain.trade.PositionIdx
 import com.bybit.api.client.service.BybitApiClientFactory
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.jetbrains.kotlinx.dl.api.inference.TensorFlowInferenceModel
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 import kotlin.use
 
 class CoreFeature(private val klines: List<Kline>) {
@@ -91,15 +98,15 @@ class CoreFeature(private val klines: List<Kline>) {
     }
 
     fun processed(data: List<TKlines>): List<List<Double>> {
-        return data.map { listOf(it.change, it.changePtc, it.delta, it.emaDiff, it.diffEma) }
+        return data.map { listOf(it.change, it.delta, it.emaDiff, it.diffEma) }
     }
 
     //This is how to load a KotlinDl model to make prediction
     fun predict(data: FloatArray): Int {
         var prediction: Int
-        TensorFlowInferenceModel.load(File("src/main/resources/scalper_pro"))
+        TensorFlowInferenceModel.load(File("src/main/resources/scalper0"))
             .use {
-                it.reshape(5)
+                it.reshape(5, 4)
                 prediction = it.predict(data)
             }
         return prediction

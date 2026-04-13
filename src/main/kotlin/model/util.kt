@@ -53,6 +53,8 @@ data class BotConfig(
     val qty: String,
     val apiKey: String,
     val secretKey: String,
+    val profitRoi: String,
+    val lossRoi: String,
     val longPeriod: Int,
     val interval: String,
     val shortPeriod: Int,
