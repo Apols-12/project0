@@ -98,7 +98,7 @@ class CoreFeature(private val klines: List<Kline>) {
     }
 
     fun processed(data: List<TKlines>): List<List<Double>> {
-        return data.map { listOf(it.change, it.delta, it.emaDiff, it.diffEma) }
+        return data.map { listOf(it.change, it.changePtc, it.delta, it.emaDiff) }
     }
 
     //This is how to load a KotlinDl model to make prediction
