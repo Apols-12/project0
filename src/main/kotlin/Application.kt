@@ -148,8 +148,6 @@ fun main() {
                                         qty = "4",
                                         apiKey = "J8QbxjasCNfIZ1mSc1",
                                         secretKey = "TnxQDH4RG19E7MgCPbaVJIL36aZMh8fWIu6l",
-                                        profitRoi = "0.2",
-                                        lossRoi = "0.5",
                                         longPeriod = 26,
                                         interval = "30",
                                         shortPeriod = 12,
