@@ -40,6 +40,7 @@ dependencies {
     implementation("dev.whyoleg.cryptography:cryptography-core:0.5.0")
     implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.5.0")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation("com.alibaba:fastjson:2.0.32") // if using Fastjson
     implementation(libs.ktor.server.host.common)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.auth)

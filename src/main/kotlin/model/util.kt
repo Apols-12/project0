@@ -54,9 +54,14 @@ data class Kline(
 
 @Serializable
 data class BotConfig(
+    val category: String = "linear",
     val botName: String,
     val symbol: String,
     val qty: String,
+    val leverage: Int,
+    val tpPercent: Double,
+    val slPercent: Double,
+
     val apiKey: String,
     val secretKey: String,
     val longPeriod: Int,
@@ -196,17 +201,6 @@ fun List<Kline>.sma(window: Int): List<Double> {
     }
 }
 
-/*fun List<Kline>.ema(window: Int): List<Double> {
-    val multiplier = 2.0 / (window + 1)
-    return indices.map { i ->
-        if (i == 0) get(i).close
-        else {
-            val prevEma = this[i - 1].close // simplified – should use previous EMA result
-            get(i).close * multiplier + prevEma * (1 - multiplier)
-        }
-    }
-}*/
-
 fun List<Double>.proEma(period: Int): List<Double> {
     if (isEmpty()) return emptyList()
     val ema = mutableListOf<Double>()
@@ -228,34 +222,6 @@ fun List<Double>.proEma(period: Int): List<Double> {
     return ema
 }
 
-/*
-fun List<Kline>.bEma(window: Int): List<Double> {
-    val multiplier = 2.0 / (window + 1)
-    val emaValues = mutableListOf<Double>()
-    for ((idx, k) in this.withIndex()) {
-        val ema = when (idx) {
-            0 -> k.close
-            else -> k.close * multiplier + emaValues[idx - 1] * (1 - multiplier)
-        }
-        emaValues.add(ema)
-    }
-    return emaValues
-}
-
-fun List<Double>.emaM(period: Int): List<Double> {
-    val mult = 2.0 / (period + 1)
-    val ema = mutableListOf<Double>()
-
-    var prevEma = first()
-    ema.add(prevEma)
-
-    for (i in 1 until size) {
-        prevEma += (this[i] - prevEma) * mult
-        ema.add(prevEma)
-    }
-    return ema
-}
-*/
 
 fun List<Kline>.macd(fast: Int = 12, slow: Int = 26, signal: Int = 3): Triple<List<Double>, List<Double>, List<Double>> {
     val closes = map { it.close }
@@ -386,22 +352,4 @@ fun List<Kline>.computeAllFeatures(
     }
 }
 
-/*fun List<List<Float>>.zScoreNorm(): List<List<Float>> {
-    if (isEmpty()) return emptyList()
-    val features = this[0].size
-    require(all {it.size == features}) {"All inner lists must have the same size"}
-
-    val columns = (0 until features).map { col -> map { row -> row[col] } }
-    val colState = columns.map { column ->
-        val mean = column.average()
-        val std = sqrt(column.map { (it - mean).pow(2) }.average())
-        mean to std
-    }
-    return map { row ->
-        row.mapIndexed { col, value ->
-            val (mean, std) = colState[col]
-            if (std == 0.0) 0.0f else ((value - mean ) / std).toFloat()
-        }
-    }
-}*/
 

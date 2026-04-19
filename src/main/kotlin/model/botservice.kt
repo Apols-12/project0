@@ -1,10 +1,9 @@
 package com.apols.model
 
 
-import kotlinx.coroutines.delay
 import mu.KotlinLogging
 
-class BotService(val candles: NetworkService) {
+class BotService(private val candles: NetworkService, private val coreFeature: CoreFeature) {
 
     private val logger = KotlinLogging.logger("Prediction")
 
@@ -16,7 +15,7 @@ class BotService(val candles: NetworkService) {
             interval = config.interval,
             limit = 1000
         )
-        val entry = CoreFeature(data)
+
 
         val features0 = data.computeAllFeatures(
             smaLong = config.longPeriod,
@@ -30,7 +29,9 @@ class BotService(val candles: NetworkService) {
 //        val kline = entry.enhanceKline(config.longPeriod, config.shortPeriod)
 //        val process = entry.processed(kline).zScoreNorm()
 
-        val process = features0.map { listOf(it.returnPct, it.volumeSma, it.rsiLong, it.rsiShort, it.signalLine, it.histogram, it.rsiDiff, it.smaDiff, it.emaDiff) }.zScoreNorm()
+        val process = features0.map {
+            listOf(it.returnPct, it.volumeSma, it.rsiLong, it.rsiShort, it.signalLine, it.histogram, it.rsiDiff, it.smaDiff, it.emaDiff)
+        }.zScoreNorm()
 
         val direction = mapOf(
             0 to "Buy",
@@ -40,63 +41,60 @@ class BotService(val candles: NetworkService) {
 
         val wFeatures = process.takeLast(1).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
-        val predict = entry.predict(features)
+        val predict = coreFeature.predict(features)
         val dir = direction[predict].toString()
 
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
         when {
             currentPosition == null -> {
-                entry.placeOrder(
+                coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
                     side = dir,
                     symbol = config.symbol,
-                    demo = config.demo,
-                    quantity = config.qty
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
                 )
                 return predict
             }
             predict == 0 && currentPosition != 0 -> {
                 if (currentPosition == 1) {
-                    entry.placeOrder(
+                    coreFeature.placeOrderWithTPSL(
                         apiKey = config.apiKey,
                         secret = config.secretKey,
                         side = dir,
                         symbol = config.symbol,
-                        demo = config.demo,
-                        quantity = config.qty
+                        quantity = config.qty,
+                        leverage = config.leverage,
+                        takeProfitPercent = config.tpPercent,
+                        stopLossPercent = config.slPercent,
+                        category = config.category,
+                        useDemo = config.demo
                     )
-                    delay(10000)
-                    entry.placeOrder(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = dir,
-                        symbol = config.symbol,
-                        demo = config.demo,
-                        quantity = config.qty
-                    )
+
                     return predict
                 }
             }
+
             predict == 1 && currentPosition != 1 -> {
-                entry.placeOrder(
+                coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
                     side = dir,
                     symbol = config.symbol,
-                    demo = config.demo,
-                    quantity = config.qty
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
                 )
-                delay(1000)
-                entry.placeOrder(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    demo = config.demo,
-                    quantity = config.qty
-                )
+
                 return predict
             }
             else -> {

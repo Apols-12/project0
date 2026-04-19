@@ -8,6 +8,7 @@ import com.apols.model.BackgrounWork
 import com.apols.model.BotConfig
 import com.apols.model.BotManager
 import com.apols.model.BotService
+import com.apols.model.CoreFeature
 import com.apols.model.NetworkService
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.config.AuthScheme
@@ -68,16 +69,19 @@ fun main() {
         install(ContentNegotiation) {
             json(
                 Json {
+                    prettyPrint = true
                     ignoreUnknownKeys = true
                     isLenient = true
-                    this@HttpClient.expectSuccess = true
                 }
             )
         }
     }
+
     insertUser(UserInsert("apollinaire", "Guinabadi2@", "apolsng@gmail.com"))
+
     val networkService = NetworkService(client)
-    val service = BotService(networkService)
+    val coreFeature = CoreFeature(client)
+    val service = BotService(networkService, coreFeature)
     val botService = BotManager(service)
     val port = System.getenv("PORT")?.toIntOrNull() ?: 5000
     val baseUrl = System.getenv("BASE_URL") ?: "https://server_1apols.com/health"
@@ -145,6 +149,9 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
+                                        tpPercent = 0.05,
+                                        slPercent = 0.03,
+                                        leverage = 20,
                                         qty = "4",
                                         apiKey = "J8QbxjasCNfIZ1mSc1",
                                         secretKey = "TnxQDH4RG19E7MgCPbaVJIL36aZMh8fWIu6l",
