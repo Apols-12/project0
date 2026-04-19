@@ -264,18 +264,19 @@ class CoreFeature(private val httpClient: HttpClient) {
      * @param category "linear" (USDT perpetual) or "inverse" (coin perpetual)
      * @return true if any position has size > 0
      */
-    private suspend fun hasOpenPosition(
+    suspend fun hasOpenPosition(
         apiKey: String,
         secret: String,
         symbol: String,
         category: String = "linear",
-        baseUrl: String
+        useDemo: Boolean
     ): Boolean {
+        val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
         val timestamp = System.currentTimeMillis().toString()
         val queryString = "category=$category&symbol=$symbol"
         val signature = generatePostSign( jsonBody = queryString, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
 
-        val response = httpClient.get("$baseUrl/v5/position/list") {
+        val response = httpClient.get("$url/v5/position/list") {
             parameter("category", category)
             parameter("symbol", symbol)
             headers.append("X-BAPI-SIGN", signature)
@@ -348,7 +349,7 @@ class CoreFeature(private val httpClient: HttpClient) {
             slTriggerBy = "MarkPrice"
         )
 
-        if (hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, baseUrl = url)) {
+        if (hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)) {
 
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
             logger.info("Close and open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
