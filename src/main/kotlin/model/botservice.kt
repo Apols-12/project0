@@ -26,11 +26,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             rsiShort = config.shortPeriod
         )
 
-//        val kline = entry.enhanceKline(config.longPeriod, config.shortPeriod)
-//        val process = entry.processed(kline).zScoreNorm()
+//
 
         val process = features0.map {
-            listOf(it.returnPct, it.volumeSma, it.rsiLong, it.rsiShort, it.signalLine, it.histogram, it.rsiDiff, it.smaDiff, it.emaDiff)
+            listOf(it.returnPct, it.volumeSma, it.rsiLong, it.rsiShort, it.signalLine, it.rsiDiff, it.smaDiff, it.emaDiff, it.histogram)
         }.zScoreNorm()
 
         val direction = mapOf(

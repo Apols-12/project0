@@ -377,7 +377,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         var prediction: Int
         TensorFlowInferenceModel.load(File("src/main/resources/scalper_x4"))
             .use {
-                it.reshape(1, 9)
+                it.reshape(9)
                 prediction = it.predict(data)
             }
         return prediction
