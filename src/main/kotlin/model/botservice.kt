@@ -16,21 +16,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             limit = 1000
         )
 
+        val pro = Processor(data)
+        val prokline = pro.enhanceKline(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod)
+        val process = pro.processed(prokline)
 
-        val features0 = data.computeAllFeatures(
-            smaLong = config.longPeriod,
-            smaShort = config.shortPeriod,
-            emaLong = config.longPeriod,
-            emaShort = config.shortPeriod,
-            rsiLong = config.longPeriod,
-            rsiShort = config.shortPeriod
-        )
-
-//
-
-        val process = features0.map {
-            listOf(it.returnPct, it.change, it.changePct, it.histogram, it.diffEma)
-        }.zScoreNorm()
 
         val direction = mapOf(
             0 to "Buy",
@@ -38,7 +27,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             2 to "Neutral"
         )
 
-        val wFeatures = process.takeLast(1).flatten()
+        val wFeatures = process.windowed(20, 1).map { it.flatten() }.takeLast(1).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
         val predict = coreFeature.predict(features)
         val dir = direction[predict].toString()

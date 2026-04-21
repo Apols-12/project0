@@ -19,6 +19,9 @@ import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.average
+import kotlin.collections.windowed
+import kotlin.math.max
 import kotlin.use
 
 private val RECV_WINDOW = "5000"
@@ -231,8 +234,8 @@ class CoreFeature(private val httpClient: HttpClient) {
     }
 
     // ------------------------------------------------------------
-// 2. Set Leverage
-// ------------------------------------------------------------
+    // 2. Set Leverage
+    // ------------------------------------------------------------
     private suspend fun setLeverage(
         apiKey: String,
         secret: String,
@@ -375,11 +378,12 @@ class CoreFeature(private val httpClient: HttpClient) {
     //This is how to load a KotlinDl model to make prediction
     fun predict(data: FloatArray): Int {
         var prediction: Int
-        TensorFlowInferenceModel.load(File("src/main/resources/scalper_x"))
+        TensorFlowInferenceModel.load(File("src/main/resources/monster0"))
             .use {
-                it.reshape(5)
+                it.reshape(20, 4)
                 prediction = it.predict(data)
             }
         return prediction
     }
+
 }
