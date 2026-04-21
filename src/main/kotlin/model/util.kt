@@ -20,6 +20,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
+import kotlin.collections.get
 import kotlin.div
 import kotlin.math.ln
 import kotlin.math.pow
@@ -166,13 +167,16 @@ data class KlineFeatures(
     val low: Double,
     val close: Double,
     val volume: Double,
-    val returnPct: Double,          // (close - prevClose)/prevClose * 100
+    val returnPct: Double, // (close - prevClose)/prevClose * 100
+    val change: Double,
+    val changePct: Double,
     val logReturn: Double,          // ln(close/prevClose)
-    val volatility: Double,         // rolling std of returns (window)
+    val delta: Double,         // rolling std of returns (window)
     val smaDiff: Double, // simple moving average of close
     val smaLong: Double,
     val smaShort: Double,
     val emaDiff: Double, // exponential moving average
+    val diffEma: Double,
     val emaLong: Double,
     val emaShort: Double,
     val rsiDiff: Double, // Relative Strength Index (14 periods)
@@ -291,6 +295,29 @@ fun List<Kline>.volumeChangePct(): List<Double> {
     }
 }
 
+fun List<Kline>.change(): List<Double> {
+    return mapIndexed { index, kline ->
+        val prevClose = if (index > 0) this[index - 1].close else kline.close
+        this[index].close - prevClose
+    }
+}
+
+fun List<Kline>.chPtc(): List<Double> {
+    return mapIndexed { index, kline ->
+        val prevClose = if (index > 0) this[index - 1].close else kline.close
+        val closeChPtc = ((kline.close - prevClose) / prevClose) * 100
+        closeChPtc
+    }
+}
+
+fun List<Kline>.delta(): List<Double> {
+    return List(this.size) { index ->
+        val fluctuation = ((this[index].close - this[index].open) / (this[index].high - this[index].low))
+        fluctuation
+    }
+}
+
+
 fun List<Kline>.computeAllFeatures(
     smaLong: Int = 26,
     smaShort: Int = 12,
@@ -304,7 +331,7 @@ fun List<Kline>.computeAllFeatures(
     val closes = map { it.close }
     val returns = withReturns().associate { it.first to it.second }
     val logReturns = zipWithNext { prev, curr ->
-        ln(curr.close / prev.close)
+        ln(curr.close / prev.close)*100
     }.let { listOf(Double.NaN) + it }
     val smaLongList = sma(smaLong)
     val smaShortList = sma(smaShort)
@@ -316,8 +343,11 @@ fun List<Kline>.computeAllFeatures(
     val volSmaList = volumeSma(volWindow)
     val volChangeList = volumeChangePct()
     val (macdLine, signalLine, histogram) = macd()
-
-
+    val changes = change()
+    val changePct = chPtc()
+    val delta = delta()
+    val shortEmas = changes.proEma(smaShort)
+    val longEmas = changes.proEma(emaLong)
     return indices.map { i ->
         val k = this[i]
         KlineFeatures(
@@ -328,8 +358,10 @@ fun List<Kline>.computeAllFeatures(
             close = k.close,
             volume = k.volume,
             returnPct = returns[k] ?: Double.NaN,
+            change = changes[i],
+            changePct = changePct[i],
             logReturn = logReturns[i],
-            volatility = Double.NaN, // can compute rolling std later
+            delta = delta[i], // can compute rolling std later
             smaDiff = smaShortList[i] - smaLongList[i],
             smaLong = smaLongList[i],
             smaShort = smaShortList[i],
@@ -339,6 +371,7 @@ fun List<Kline>.computeAllFeatures(
             rsiDiff = rsiShortList[i] - rsiLongList[i],
             rsiLong = rsiLongList[i],
             rsiShort = rsiShortList[i],
+            diffEma = shortEmas[i] - longEmas[i],
             bbUpper = bbUpperList[i],
             bbLower = bbLowerList[i],
             volumeSma = volSmaList[i],
@@ -346,8 +379,8 @@ fun List<Kline>.computeAllFeatures(
             signalLine = signalLine[i],
             histogram = histogram[i],
             volumeChangePct = volChangeList[i],
-            highLowRatio = if (k.close != 0.0) (k.high - k.low) / k.close else Double.NaN,
-            closeOpenRatio = if (k.open != 0.0) (k.close - k.open) / k.open else Double.NaN
+            highLowRatio = if (k.close != 0.0) ((k.high - k.low) / k.close)*100 else Double.NaN,
+            closeOpenRatio = if (k.open != 0.0) ((k.close - k.open) / k.open)*100 else Double.NaN
         )
     }
 }

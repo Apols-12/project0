@@ -29,7 +29,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 //
 
         val process = features0.map {
-            listOf(it.returnPct, it.volumeSma, it.rsiLong, it.rsiShort, it.signalLine, it.rsiDiff, it.smaDiff, it.emaDiff, it.histogram)
+            listOf(it.returnPct, it.change, it.changePct, it.histogram, it.diffEma)
         }.zScoreNorm()
 
         val direction = mapOf(
