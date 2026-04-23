@@ -18,7 +18,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val pro = Processor(data)
         val prokline = pro.enhanceKline(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod)
-        val process = pro.processed(prokline)
+        val process = pro.processed(prokline).zScoreNorm()
 
 
         val direction = mapOf(
