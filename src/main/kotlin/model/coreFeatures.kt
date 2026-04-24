@@ -19,9 +19,6 @@ import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlin.collections.average
-import kotlin.collections.windowed
-import kotlin.math.max
 import kotlin.use
 
 private val RECV_WINDOW = "5000"
@@ -378,9 +375,9 @@ class CoreFeature(private val httpClient: HttpClient) {
     //This is how to load a KotlinDl model to make prediction
     fun predict(data: FloatArray): Int {
         var prediction: Int
-        TensorFlowInferenceModel.load(File("src/main/resources/monster0"))
+        TensorFlowInferenceModel.load(File("src/main/resources/scalper_x5"))
             .use {
-                it.reshape(20, 4)
+                it.reshape(5, 7)
                 prediction = it.predict(data)
             }
         return prediction
