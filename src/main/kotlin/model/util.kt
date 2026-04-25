@@ -2,37 +2,27 @@ package com.apols.model
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.ServerResponseException
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.time.Instant
-import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
 import kotlin.collections.average
 import kotlin.collections.get
-import kotlin.collections.windowed
 import kotlin.div
 import kotlin.math.ln
-import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.text.toLongOrNull
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 import kotlin.times
-import kotlin.unaryMinus
 
 @Serializable
 data class BybitKlineResponse(
@@ -87,6 +77,7 @@ data class TKlines(
     val emaDiff: Double,
     val diffEma: Double
 )
+
 fun List<List<Double>>.zScoreNorm(): List<List<Double>> {
     if (isEmpty()) return emptyList()
     val features = this[0].size
@@ -142,7 +133,7 @@ class NetworkService(private val client: HttpClient) {
             val waitTime = (rateLimitReset*1000) - System.currentTimeMillis()
             if (waitTime > 0) {
                 println("Approaching rate limit. Waiting ${waitTime}ms")
-                delay(waitTime.coerceAtLeast(1000))
+                delay(waitTime.coerceAtLeast(1000).milliseconds)
             }
         }
         // parse it to a format the program can manipulate
@@ -340,6 +331,7 @@ fun List<Kline>.computeAllFeatures(
     val smaShortList = sma(smaShort)
     val emaLongList = closes.proEma(emaLong)
     val emaShortList = closes.proEma(emaShort)
+
     val rsiLongList = rsi(rsiLong)
     val rsiShortList = rsi(rsiShort)
     val (_, bbUpperList, bbLowerList) = bollingerBands(bbWindow)
@@ -387,152 +379,3 @@ fun List<Kline>.computeAllFeatures(
         )
     }
 }
-
-class Processor(private val klines: List<Kline>) {
-
-    fun processed(data: List<TKlines>): List<List<Double>> {
-        return data.map { listOf(it.change, it.changePtc, it.delta, it.emaDiff) }
-    }
-
-    private fun change(): List<Double> {
-        return klines.mapIndexed { index, kline ->
-            val prevClose = if (index > 0) klines[index - 1].close else kline.close
-            klines[index].close - prevClose
-        }
-    }
-
-    private fun chPtc(): List<Double> {
-        return klines.mapIndexed { index, kline ->
-            val prevClose = if (index > 0) klines[index - 1].close else kline.close
-            val closeChPtc = ((kline.close - prevClose) / prevClose) * 100
-            closeChPtc
-        }
-    }
-
-    private fun volChange(): List<Double> {
-        return klines.mapIndexed { index, kline ->
-            val prevVol = if (index > 0) klines[index - 1].volume else kline.volume
-            val volCh = if (index == 0) 0.0 else (kline.volume - prevVol)
-            volCh
-        }
-    }
-
-    private fun volChPtc(): List<Double> {
-        return klines.mapIndexed { index, kline ->
-            val prevVolume = if (index > 0) klines[index - 1].volume else kline.volume
-            val volChangePtc = if (index == 0) 0.0 else ((kline.volume - prevVolume) / prevVolume) * 100
-            volChangePtc
-        }
-    }
-
-    private fun delta(): List<Double> {
-        return List(klines.size) { index->
-            val fluctuation =  ((klines[index].close - klines[index].open)/(klines[index].high - klines[index].low))
-            fluctuation
-        }
-    }
-
-    fun emaDiff(period: Int): List<Double> {
-        val change =  klines.mapIndexed { index, kline ->
-            val close = if (index > 0) klines[index].close else kline.close
-            close
-        }
-        return List(period - 1){0.0} + change.windowed(period).map { it.average() }
-    }
-
-    private fun calculateEMA(data: List<Double>, period: Int): List<Double> {
-        if (data.isEmpty()) return emptyList()
-        val ema = mutableListOf<Double>()
-        val k = 2.0 / (period + 1)
-        var previousEMA = data.take(period).average()
-        data.forEachIndexed { index, close ->
-            when {
-                index < period - 1 -> ema.add(0.0) // Not enough data
-                index == period -> {
-                    ema.add(previousEMA)
-                }
-                else -> {
-                    val currentEMA = (close - previousEMA) * k + previousEMA
-                    ema.add(currentEMA)
-                    previousEMA = currentEMA
-                }
-            }
-        }
-        return ema
-    }
-
-    fun calculateRSI(prices: List<Double>, period: Int = 14): List<Double> {
-        // Need at least period + 1 prices to compute the first RSI
-        if (prices.size < period + 1) return List(prices.size) { 0.0 }
-
-        // Compute price changes, gains, and losses
-        val changes = (1 until prices.size).map { i -> prices[i] - prices[i - 1] }
-        val gains = changes.map { max(it, 0.0) }
-        val losses = changes.map { max(-it, 0.0) }
-
-        // Initial averages (simple average over the first 'period' changes)
-        var avgGain = gains.take(period).average()
-        var avgLoss = losses.take(period).average()
-
-        val rsi = MutableList(prices.size) { 0.0}
-
-        // First RSI value (at index = period)
-        rsi[period] = if (avgLoss == 0.0) 100.0 else {
-            val rs = avgGain / avgLoss
-            100.0 - (100.0 / (1.0 + rs))
-        }
-
-        // Update averages and compute subsequent RSI values
-        for (i in period until changes.size) {
-            // Wilder's smoothing: newAvg = (prevAvg * (period-1) + current) / period
-            avgGain = (avgGain * (period - 1) + gains[i]) / period
-            avgLoss = (avgLoss * (period - 1) + losses[i]) / period
-
-            val priceIndex = i + 1   // because changes[i] ends at prices[i+1]
-            if (priceIndex < prices.size) {
-                rsi[priceIndex] = if (avgLoss == 0.0) 100.0 else {
-                    val rs = avgGain / avgLoss
-                    100.0 - (100.0 / (1.0 + rs))
-                }
-            }
-        }
-
-        return rsi
-    }
-
-
-    fun enhanceKline(shortPeriod: Int, longPeriod: Int): List<TKlines> {
-        val closes = klines.map { it.close }
-
-        val change = change()
-        val longEma = calculateEMA(closes, longPeriod)
-        val shortEma = calculateEMA(closes, shortPeriod)
-        val emaShort = calculateEMA(change, shortPeriod)
-        val emaLong = calculateEMA(change, longPeriod)
-        val changePtc = chPtc()
-        val lonRsi = calculateRSI(closes, 14)
-        val shorRsi = calculateRSI(closes, 11)
-        val volCh = volChange()
-        val delta = delta()
-        val volPtc = volChPtc()
-
-        return klines.mapIndexed { index, kline ->
-            TKlines(
-                close = kline.close,
-                change = change[index],
-                changePtc = changePtc[index],
-                volCh = volCh[index],
-                delta = delta[index],
-//                 vol_percent = volPtc[index],
-                emaDiff =  shortEma[index] - longEma[index],
-                longEma = longEma[index],
-                shortEma = shortEma[index],
-                emaShort = emaShort[index],
-                emaLong = emaLong[index],
-                diffEma = emaShort[index] - emaLong[index]
-            )
-        }
-    }
-}
-
-

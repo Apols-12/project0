@@ -25,9 +25,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             rsiShort = config.shortPeriod,
         )
 
-        val proFeatures = rawData.map { listOf(it.change, it.returnPct, it.volumeSma, it.emaShort, it.rsiDiff, it.signalLine, it.histogram)}.zScoreNorm()
-
-
+        val proFeatures = rawData.map { listOf(it.change,  it.high, it.close, it.highLowRatio, it.signalLine, it.histogram)}.zScoreNorm()
 
         val direction = mapOf(
             0 to "Buy",
@@ -35,7 +33,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             2 to "Neutral"
         )
 
-        val wFeatures = proFeatures.takeLast(5).flatten()
+        val wFeatures = proFeatures.takeLast(1).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
         val predict = coreFeature.predict(features)
         val dir = direction[predict].toString()
