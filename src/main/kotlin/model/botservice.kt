@@ -19,20 +19,20 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val processor = Processor(data)
         val enhancedFeature = processor.enhanceKline(longPeriod = config.longPeriod, shortPeriod = config.shortPeriod)
 
-        val proFeatures = processor.processed(enhancedFeature).zScoreNorm()
+//        val proFeatures = processor.processed(enhancedFeature).zScoreNorm()
 
         val direction = mapOf(
             0 to "Buy",
             1 to "Sell",
             2 to "Neutral"
         )
+        val actualDir = enhancedFeature.map { it.emaDiff }.map { if (it > 0.0) 0 else 1 }.takeLast(1)[0]
 
-        println(proFeatures.takeLast(1).flatten())
-
-        val wFeatures = proFeatures.takeLast(20).flatten()
+/*        val wFeatures = proFeatures.takeLast(20).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
-        val predict = coreFeature.predict(features)
-        val dir = direction[predict].toString()
+        val predict = coreFeature.predict(features)*/
+
+        val dir = direction[actualDir].toString()
 
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
@@ -50,9 +50,9 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
-                return predict
+                return actualDir
             }
-            predict == 0 && currentPosition != 0 -> {
+            actualDir == 0 && currentPosition != 0 -> {
                 if (currentPosition == 1) {
                     coreFeature.placeOrderWithTPSL(
                         apiKey = config.apiKey,
@@ -67,11 +67,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                         useDemo = config.demo
                     )
 
-                    return predict
+                    return actualDir
                 }
             }
 
-            predict == 1 && currentPosition != 1 -> {
+            actualDir == 1 && currentPosition != 1 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -85,7 +85,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     useDemo = config.demo
                 )
 
-                return predict
+                return actualDir
             }
             else -> {
                 if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo )) {
