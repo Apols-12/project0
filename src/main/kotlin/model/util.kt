@@ -153,229 +153,90 @@ class NetworkService(private val client: HttpClient) {
     }
 }
 
+class Processor(private val klines: List<Kline>) {
+    private val closes get() = klines.map { it.close }
 
-data class KlineFeatures(
-    val time: String,
-    val open: Double,
-    val high: Double,
-    val low: Double,
-    val close: Double,
-    val volume: Double,
-    val returnPct: Double, // (close - prevClose)/prevClose * 100
-    val change: Double,
-    val changePct: Double,
-    val logReturn: Double,          // ln(close/prevClose)
-    val delta: Double,         // rolling std of returns (window)
-    val smaDiff: Double, // simple moving average of close
-    val smaLong: Double,
-    val smaShort: Double,
-    val emaDiff: Double, // exponential moving average
-    val diffEma: Double,
-    val emaLong: Double,
-    val emaShort: Double,
-    val rsiDiff: Double, // Relative Strength Index (14 periods)
-    val rsiLong: Double,
-    val rsiShort: Double,
-    val bbUpper: Double,            // Bollinger Band upper
-    val bbLower: Double,            // Bollinger Band lower
-    val volumeSma: Double, // volume moving average
-    val macdLine: Double,
-    val signalLine: Double,
-    val histogram: Double,
-    val volumeChangePct: Double,    // (volume - prevVolume)/prevVolume * 100
-    val highLowRatio: Double,       // (high - low)/close
-    val closeOpenRatio: Double      // (close - open)/open
-)
-
-fun List<Kline>.withReturns(): List<Pair<Kline, Double>> =
-    zipWithNext { prev, curr ->
-        curr to ((curr.close - prev.close) / prev.close) * 100
-    }.map { (kline, ret) -> kline to ret }
-
-fun List<Kline>.sma(window: Int): List<Double> {
-    return indices.map { i ->
-        if (i < window - 1) Double.NaN
-        else subList(i - window + 1, i + 1).sumOf { it.close } / window
-    }
-}
-
-fun List<Double>.proEma(period: Int): List<Double> {
-    if (isEmpty()) return emptyList()
-    val ema = mutableListOf<Double>()
-    val k = 2.0 / (period + 1)
-    var previousEMA = take(period).average()
-    forEachIndexed { index, close ->
-        when {
-            index < period - 1 -> ema.add(0.0) // Not enough data
-            index == period -> {
-                ema.add(previousEMA)
-            }
-            else -> {
-                val currentEMA = (close - previousEMA) * k + previousEMA
-                ema.add(currentEMA)
-                previousEMA = currentEMA
-            }
+    private fun change(): List<Double> {
+        return klines.mapIndexed { index, kline ->
+            val prevClose = if (index > 0) klines[index - 1].close else kline.close
+            klines[index].close - prevClose
         }
     }
-    return ema
-}
 
-
-fun List<Kline>.macd(fast: Int = 12, slow: Int = 26, signal: Int = 3): Triple<List<Double>, List<Double>, List<Double>> {
-    val closes = map { it.close }
-
-    val emaFast = closes.proEma(fast)
-    val emaSlow = closes.proEma(slow)
-
-    val macdLine = emaFast.zip(emaSlow) {f, s -> f - s}
-    val signalLine = macdLine.proEma(signal)
-    val histogram = macdLine.zip(signalLine) {f, s -> f - s}
-
-    return Triple(macdLine, signalLine, histogram)
-}
-
-fun List<Kline>.rsi(period: Int = 14): List<Double> {
-    if (size < period + 1) return List(size) { Double.NaN }
-    val gains = mutableListOf<Double>()
-    val losses = mutableListOf<Double>()
-    for (i in 1 until size) {
-        val diff = this[i].close - this[i - 1].close
-        gains.add(maxOf(diff, 0.0))
-        losses.add(maxOf(-diff, 0.0))
-    }
-    // first avg gain/loss
-    var avgGain = gains.take(period).average()
-    var avgLoss = losses.take(period).average()
-    val rsiValues = MutableList(size) { Double.NaN }
-    // first RSI after initial period
-    val firstRs = if (avgLoss == 0.0) 100.0 else avgGain / avgLoss
-    rsiValues[period] = 100.0 - (100.0 / (1.0 + firstRs))
-    // subsequent RSI using Wilder's smoothing
-    for (i in period + 1 until size) {
-        avgGain = (avgGain * (period - 1) + gains[i - 1]) / period
-        avgLoss = (avgLoss * (period - 1) + losses[i - 1]) / period
-        val rs = if (avgLoss == 0.0) 100.0 else avgGain / avgLoss
-        rsiValues[i] = 100.0 - (100.0 / (1.0 + rs))
-    }
-    return rsiValues
-}
-
-fun List<Kline>.bollingerBands(window: Int = 20, k: Double = 2.0): Triple<List<Double>, List<Double>, List<Double>> {
-    val smaValues = this.sma(window)
-    val stdDevs = indices.map { i ->
-        if (i < window - 1) Double.NaN
-        else {
-            val slice = subList(i - window + 1, i + 1)
-            val mean = slice.sumOf { it.close } / window
-            val variance = slice.sumOf { (it.close - mean).pow(2) } / window
-            sqrt(variance)
+    private fun chPtc(): List<Double> {
+        return klines.mapIndexed { index, kline ->
+            val prevClose = if (index > 0) klines[index - 1].close else kline.close
+            val closeChPtc = ((kline.close - prevClose) / prevClose) * 100
+            closeChPtc
         }
     }
-    val upper = smaValues.zip(stdDevs) { sma, sd -> if (sd.isNaN()) Double.NaN else sma + k * sd }
-    val lower = smaValues.zip(stdDevs) { sma, sd -> if (sd.isNaN()) Double.NaN else sma - k * sd }
-    return Triple(smaValues, upper, lower)
-}
 
-fun List<Kline>.volumeSma(window: Int): List<Double> {
-    return indices.map { i ->
-        if (i < window - 1) Double.NaN
-        else subList(i - window + 1, i + 1).sumOf { it.volume } / window
+    private fun volChange(): List<Double> {
+        return klines.mapIndexed { index, kline ->
+            val prevVol = if (index > 0) klines[index - 1].volume else kline.volume
+            val volCh = if (index == 0) 0.0 else (kline.volume - prevVol)
+            volCh
+        }
     }
-}
 
-fun List<Kline>.volumeChangePct(): List<Double> {
-    return listOf(Double.NaN) + zipWithNext { prev, curr ->
-        ((curr.volume - prev.volume) / prev.volume) * 100
+    private fun delta(): List<Double> {
+        return List(klines.size) { index ->
+            val fluctuation = (klines[index].close - klines[index].open) / (klines[index].high - klines[index].low)
+            fluctuation
+        }
     }
-}
 
-fun List<Kline>.change(): List<Double> {
-    return mapIndexed { index, kline ->
-        val prevClose = if (index > 0) this[index - 1].close else kline.close
-        this[index].close - prevClose
+    private fun calculateEMA(data: List<Double>, period: Int): List<Double> {
+        if (data.isEmpty()) return emptyList()
+        val ema = mutableListOf<Double>()
+        val k = 2.0 / (period + 1)
+        var previousEMA = data.take(period).average()
+        data.forEachIndexed { index, close ->
+            when {
+                index < period - 1 -> ema.add(0.0) // Not enough data
+                index == period -> {
+                    ema.add(previousEMA)
+                }
+                else -> {
+                    val currentEMA = (close - previousEMA) * k + previousEMA
+                    ema.add(currentEMA)
+                    previousEMA = currentEMA
+                }
+            }
+        }
+        return ema
     }
-}
 
-fun List<Kline>.chPtc(): List<Double> {
-    return mapIndexed { index, kline ->
-        val prevClose = if (index > 0) this[index - 1].close else kline.close
-        val closeChPtc = ((kline.close - prevClose) / prevClose) * 100
-        closeChPtc
+    fun enhanceKline(longPeriod: Int, shortPeriod: Int): List<TKlines> {
+
+        val change = change()
+        val changePtc = chPtc()
+        val volCh = volChange()
+        val delta = delta()
+        val emaLong = calculateEMA(change, longPeriod)
+        val emaShort = calculateEMA(change, shortPeriod)
+        val longEma = calculateEMA(closes, longPeriod)
+        val shortEma = calculateEMA(closes, shortPeriod)
+
+        return klines.mapIndexed { index, kline ->
+            TKlines(
+                close = kline.close,
+                change = change[index],
+                changePtc = changePtc[index],
+                volCh = volCh[index],
+                delta = delta[index],
+                emaShort = emaShort[index],
+                shortEma = shortEma[index],
+                longEma = longEma[index],
+                emaLong = emaLong[index],
+                emaDiff = shortEma[index] - longEma[index],
+                diffEma = emaShort[index] - emaLong[index]
+            )
+        }
     }
-}
 
-fun List<Kline>.delta(): List<Double> {
-    return List(this.size) { index ->
-        val fluctuation = ((this[index].close - this[index].open) / (this[index].high - this[index].low))
-        fluctuation
+    fun processed(data: List<TKlines>): List<List<Double>> {
+        return data.map { listOf(it.change, it.changePtc, it.delta, it.emaDiff) }
     }
-}
 
-
-fun List<Kline>.computeAllFeatures(
-    smaLong: Int = 26,
-    smaShort: Int = 12,
-    emaLong: Int = 26,
-    emaShort: Int = 12,
-    rsiLong: Int = 26,
-    rsiShort: Int = 12,
-    volWindow: Int = 14,
-    bbWindow: Int = 20
-): List<KlineFeatures> {
-    val closes = map { it.close }
-    val returns = withReturns().associate { it.first to it.second }
-    val logReturns = zipWithNext { prev, curr ->
-        ln(curr.close / prev.close)*100
-    }.let { listOf(Double.NaN) + it }
-    val smaLongList = sma(smaLong)
-    val smaShortList = sma(smaShort)
-    val emaLongList = closes.proEma(emaLong)
-    val emaShortList = closes.proEma(emaShort)
-
-    val rsiLongList = rsi(rsiLong)
-    val rsiShortList = rsi(rsiShort)
-    val (_, bbUpperList, bbLowerList) = bollingerBands(bbWindow)
-    val volSmaList = volumeSma(volWindow)
-    val volChangeList = volumeChangePct()
-    val (macdLine, signalLine, histogram) = macd()
-    val changes = change()
-    val changePct = chPtc()
-    val delta = delta()
-    val shortEmas = changes.proEma(smaShort)
-    val longEmas = changes.proEma(emaLong)
-    return indices.map { i ->
-        val k = this[i]
-        KlineFeatures(
-            time = k.time,
-            open = k.open,
-            high = k.high,
-            low = k.low,
-            close = k.close,
-            volume = k.volume,
-            returnPct = returns[k] ?: Double.NaN,
-            change = changes[i],
-            changePct = changePct[i],
-            logReturn = logReturns[i],
-            delta = delta[i], // can compute rolling std later
-            smaDiff = smaShortList[i] - smaLongList[i],
-            smaLong = smaLongList[i],
-            smaShort = smaShortList[i],
-            emaDiff = emaShortList[i] - emaLongList[i],
-            emaLong = emaLongList[i],
-            emaShort = emaShortList[i],
-            rsiDiff = rsiShortList[i] - rsiLongList[i],
-            rsiLong = rsiLongList[i],
-            rsiShort = rsiShortList[i],
-            diffEma = shortEmas[i] - longEmas[i],
-            bbUpper = bbUpperList[i],
-            bbLower = bbLowerList[i],
-            volumeSma = volSmaList[i],
-            macdLine = macdLine[i],
-            signalLine = signalLine[i],
-            histogram = histogram[i],
-            volumeChangePct = volChangeList[i],
-            highLowRatio = if (k.close != 0.0) ((k.high - k.low) / k.close)*100 else Double.NaN,
-            closeOpenRatio = if (k.open != 0.0) ((k.close - k.open) / k.open)*100 else Double.NaN
-        )
-    }
 }
