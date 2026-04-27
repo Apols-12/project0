@@ -26,7 +26,14 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             1 to "Sell",
             2 to "Neutral"
         )
-        val actualDir = enhancedFeature.map { it.emaDiff }.map { if (it > 0.0) 0 else 1 }.takeLast(1)[0]
+
+        val actualDir = enhancedFeature.map { it.diffEma }.map {
+            when(it) {
+                in 0.2..10000.0 -> 0
+                in -10000.0..-0.2 -> 1
+                else -> 2
+            }
+        }.takeLast(1)[0]
 
 /*        val wFeatures = proFeatures.takeLast(20).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
@@ -87,8 +94,13 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
                 return actualDir
             }
+
+            actualDir == 2 -> {
+                logger.info("Patience no need to change the position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
+            }
+
             else -> {
-                if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo )) {
+                if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo ) && dir != "Neutral") {
                     coreFeature.placeOrderWithTPSL(
                         apiKey = config.apiKey,
                         secret = config.secretKey,
