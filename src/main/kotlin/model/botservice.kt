@@ -29,8 +29,8 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val actualDir = enhancedFeature.map { it.diffEma }.map {
             when(it) {
-                in 0.2..10000.0 -> 0
-                in -10000.0..-0.2 -> 1
+                in 0.05..10000.0 -> 0
+                in -10000.0..-0.05 -> 1
                 else -> 2
             }
         }.takeLast(1)[0]
@@ -44,7 +44,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
         when {
-            currentPosition == null -> {
+            currentPosition == null && actualDir != 2-> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
