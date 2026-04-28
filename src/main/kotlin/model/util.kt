@@ -55,13 +55,13 @@ data class BotConfig(
     val leverage: Int,
     val tpPercent: Double,
     val slPercent: Double,
-
     val apiKey: String,
     val secretKey: String,
     val longPeriod: Int,
     val interval: String,
     val shortPeriod: Int,
-    val demo: Boolean
+    val demo: Boolean,
+    val overTrade: Boolean = true
 )
 
 data class TKlines(

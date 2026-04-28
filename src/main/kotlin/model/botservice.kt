@@ -95,23 +95,25 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             }
 
             else -> {
-                if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo ) && dir != "Neutral") {
-                    coreFeature.placeOrderWithTPSL(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = dir,
-                        symbol = config.symbol,
-                        quantity = config.qty,
-                        leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
-                        category = config.category,
-                        useDemo = config.demo
-                    )
-                    logger.info("Opening another position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
+                if(config.overTrade) {
+                    if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo ) && dir != "Neutral") {
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        logger.info("Opening another position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
+                    }
+                } else {
+                    logger.info("No need Change position for the moment or place new order>>>>>>>>><<<<<<<<<<<>>>>>>>>>>>><<<<<<<>>>>>>>>>>><<<<<<<<<>>>>>>>>>>>")
                 }
-
-                logger.info("No need Change position for the moment>>>>>>>>><<<<<<<<<<<>>>>>>>>>>>><<<<<<<>>>>>>>>>>><<<<<<<<<>>>>>>>>>>>")
                 return currentPosition
             }
         }
