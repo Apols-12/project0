@@ -28,7 +28,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             2 to "Neutral"
         )
 
-        val actualDir = enhancedFeature.map { it.emaDiff }.zipWithNext { a, b -> b - a }.map { if (it > 0.0 ) 0 else 1 }.takeLast(1)[0]
+        val actualDir = enhancedFeature.map { it.diffEma }.map { if (it > 0.0 ) 0 else 1 }.takeLast(1)[0]
 
 /*        val wFeatures = proFeatures.takeLast(20).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()
