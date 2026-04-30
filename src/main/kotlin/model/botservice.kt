@@ -2,7 +2,6 @@ package com.apols.model
 
 
 import mu.KotlinLogging
-import kotlin.compareTo
 
 class BotService(private val candles: NetworkService, private val coreFeature: CoreFeature) {
 
@@ -28,7 +27,17 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             2 to "Neutral"
         )
 
-        val actualDir = enhancedFeature.map { it.diffEma }.map { if (it > 0.0 ) 0 else 1 }.takeLast(1)[0]
+//        val actualDir = enhancedFeature.map { it.diffEma }.map { if (it > 0.0 ) 0 else 1 }.takeLast(1)[0]
+        val actualDir = enhancedFeature.map { it.emaDiff }.zipWithNext { a, b ->
+            val diff = b - a
+            when {
+                b > 0.0 && diff > 0.0 -> 0
+                b > 0.0 && diff < -0.5 -> 1
+                b < 0.0 && diff > 0.5 -> 0
+                b < 0.0 && diff < 0.0 -> 1
+                else -> 2
+            }
+        }.takeLast(1)[0]
 
 /*        val wFeatures = proFeatures.takeLast(20).flatten()
         val features = wFeatures.map { it.toFloat() }.toFloatArray()

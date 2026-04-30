@@ -373,7 +373,7 @@ class CoreFeature(private val httpClient: HttpClient) {
     }
 
     //This is how to load a KotlinDl model to make prediction
-    fun predict(data: FloatArray): Int {
+/*    fun predict(data: FloatArray): Int {
         var prediction: Int
         TensorFlowInferenceModel.load(File("src/main/resources/monster0"))
             .use {
@@ -381,6 +381,5 @@ class CoreFeature(private val httpClient: HttpClient) {
                 prediction = it.predict(data)
             }
         return prediction
-    }
-
+    }*/
 }
