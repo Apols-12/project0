@@ -31,10 +31,8 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val actualDir = enhancedFeature.map { it.emaDiff }.zipWithNext { a, b ->
             val diff = b - a
             when {
-                b > 0.0 && diff > 0.0 -> 0
-                b > 0.0 && diff < -0.5 -> 1
-                b < 0.0 && diff > 0.5 -> 0
-                b < 0.0 && diff < 0.0 -> 1
+                b > 0.0 -> 0
+                b < 0.0  -> 1
                 else -> 2
             }
         }.takeLast(1)[0]
