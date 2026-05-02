@@ -37,6 +37,10 @@ data class KlineResult(
     val list: List<List<Double>>
 )
 
+/**
+ * Immutable representation of a single Kline / candlestick.
+ * Validated during construction to guarantee OHLC integrity.
+ */
 data class Kline(
     val time: String,
     val open: Double,
@@ -44,7 +48,13 @@ data class Kline(
     val low: Double,
     val close: Double,
     val volume: Double
-)
+) {
+    init {
+        require(high >= open && high >= close) { "High must be >= open and close" }
+        require(low <= open && low <= close) { "Low must be <= open and close" }
+        require(volume >= 0) { "Volume must be non-negative" }
+    }
+}
 
 @Serializable
 data class BotConfig(
@@ -60,6 +70,7 @@ data class BotConfig(
     val longPeriod: Int,
     val interval: String,
     val shortPeriod: Int,
+    val threshold: Double,
     val demo: Boolean,
     val overTrade: Boolean = true
 )

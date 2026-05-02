@@ -51,7 +51,6 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-
 fun main() {
     Database.connect("jdbc:h2:./myh2db", driver = "org.h2.Driver")
     transaction {
@@ -158,6 +157,7 @@ fun main() {
                                         longPeriod = 26,
                                         interval = "30",
                                         shortPeriod = 12,
+                                        threshold = 0.3,
                                         demo = true
                                     )
                                 }

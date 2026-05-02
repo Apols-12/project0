@@ -1,6 +1,5 @@
 package com.apols.model
 
-
 import mu.KotlinLogging
 
 class BotService(private val candles: NetworkService, private val coreFeature: CoreFeature) {
@@ -16,10 +15,20 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             limit = 1000
         )
 
-        val processor = Processor(data)
-        val enhancedFeature = processor.enhanceKline(longPeriod = config.longPeriod, shortPeriod = config.shortPeriod)
+        val strategies = listOf(
+            SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 1.0,
+            RsiStrategy(period = config.shortPeriod, oversoldThreshold = 30.0, overboughtThreshold = 70.0) to 0.5,
+            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 1.2
+        )
 
-//        val proFeatures = processor.processed(enhancedFeature).zScoreNorm()
+        val predictorConfig = EngineConfig(
+            strategies = strategies,
+            minRequiredSignals = 1,
+            biasThreshold = config.threshold
+        )
+        val predictor = PredictionEngine(predictorConfig)
+
+        val prediction = predictor.predict(data)
 
         val direction = mapOf(
             0 to "Buy",
@@ -27,19 +36,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             2 to "Neutral"
         )
 
-//        val actualDir = enhancedFeature.map { it.diffEma }.map { if (it > 0.0 ) 0 else 1 }.takeLast(1)[0]
-        val actualDir = enhancedFeature.map { it.emaDiff }.zipWithNext { a, b ->
-            val diff = b - a
-            when {
-                b > 0.0 -> 0
-                b < 0.0  -> 1
-                else -> 2
-            }
-        }.takeLast(1)[0]
-
-/*        val wFeatures = proFeatures.takeLast(20).flatten()
-        val features = wFeatures.map { it.toFloat() }.toFloatArray()
-        val predict = coreFeature.predict(features)*/
+        val actualDir = when(prediction) {
+            is Prediction.Buy -> 0
+            is Prediction.Sell -> 1
+            is Prediction.Neutral -> 2
+        }
 
         val dir = direction[actualDir].toString()
 
