@@ -18,7 +18,12 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val strategies = listOf(
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 1.0,
             RsiStrategy(period = config.shortPeriod, oversoldThreshold = 30.0, overboughtThreshold = 70.0) to 0.5,
-            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 1.2
+            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 1.2,
+            BollingerBandsStrategy(period = 20, numStdDev = 2.0, requireCrossover = true) to 0.8,
+            StochasticStrategy() to 0.7,
+            VwapStrategy() to 0.3,
+            GoldenCrossStrategy(shortPeriod = 50, longPeriod = 200) to 1.5,
+            IchimokuStrategy() to 1.0
         )
 
         val predictorConfig = EngineConfig(
