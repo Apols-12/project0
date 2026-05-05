@@ -50,6 +50,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
         when {
+            actualDir == 2 -> {
+                logger.info("Patience no need to change the position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
+                return actualDir
+            }
+
             currentPosition == null && actualDir != 2-> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
@@ -65,23 +70,21 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 )
                 return actualDir
             }
-            actualDir == 0 && currentPosition != 0 -> {
-                if (currentPosition == 1) {
-                    coreFeature.placeOrderWithTPSL(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = dir,
-                        symbol = config.symbol,
-                        quantity = config.qty,
-                        leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
-                        category = config.category,
-                        useDemo = config.demo
-                    )
 
-                    return actualDir
-                }
+            actualDir == 0 && currentPosition != 0 -> {
+                coreFeature.placeOrderWithTPSL(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
+                )
+                return actualDir
             }
 
             actualDir == 1 && currentPosition != 1 -> {
@@ -101,14 +104,9 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            actualDir == 2 -> {
-                logger.info("Patience no need to change the position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
-            }
-
             else -> {
                 return currentPosition
             }
         }
-        return null
     }
 }
