@@ -333,7 +333,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         val bodyJson = JSON.toJSONString(params)
         val signature = generatePostSign( jsonBody = bodyJson, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
 
-        val response = httpClient.get("$url/v5/position/list") {
+        val response = httpClient.post("$url/v5/order/cancel-all") {
             headers.append("X-BAPI-SIGN", signature)
             headers.append("X-BAPI-API-KEY", apiKey)
             headers.append("X-BAPI-TIMESTAMP", timestamp)
