@@ -44,10 +44,27 @@ class CoreFeature(private val httpClient: HttpClient) {
     )
 
     @Serializable
+    data class CancelOrder(
+        val category: String,
+        val symbol: String
+    )
+
+    @Serializable
+    data class CanceledOrder(
+        val orderId: String?,
+        val orderLinkId: String?
+    )
+    @Serializable
+    data class CancelOrderResponse(
+        val list: List<CanceledOrder>,
+        val success: String
+    )
+    @Serializable
     data class Result(
         val category: String,
         val list: List<TickerData>
     )
+
     @Serializable
     data class TickerData(
         val symbol: String,
@@ -270,7 +287,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         symbol: String,
         category: String = "linear",
         useDemo: Boolean
-    ): String? {
+    ): Boolean {
         val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
         val timestamp = System.currentTimeMillis().toString()
         val queryString = "category=$category&symbol=$symbol"
@@ -293,7 +310,46 @@ class CoreFeature(private val httpClient: HttpClient) {
             throw Exception("Failed to fetch positions: ${result.retMsg}")
         }
         // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
-        return result.result.list.firstOrNull()?.side
+        return result.result.list.map { it.size }.any { it > "0.00001" }
+    }
+
+    suspend fun cancelOpenPosition(
+        apiKey: String,
+        secret: String,
+        symbol: String,
+        category: String = "linear",
+        useDemo: Boolean
+    ): Boolean {
+        val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
+        val body = CancelOrder(category = category, symbol = symbol)
+
+        val params = mutableMapOf<String, Any?>(
+            "category" to body.category,
+            "symbol" to body.symbol,
+        )
+
+        val timestamp = System.currentTimeMillis().toString()
+
+        val bodyJson = JSON.toJSONString(params)
+        val signature = generatePostSign( jsonBody = bodyJson, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
+
+        val response = httpClient.get("$url/v5/position/list") {
+            headers.append("X-BAPI-SIGN", signature)
+            headers.append("X-BAPI-API-KEY", apiKey)
+            headers.append("X-BAPI-TIMESTAMP", timestamp)
+            headers.append("X-BAPI-RECV-WINDOW", RECV_WINDOW)
+            setBody(bodyJson)
+        }
+
+        logger.info("Check open position................................................................")
+
+        val result = json.decodeFromString<BybitResponse<CancelOrderResponse>>(response.bodyAsText())
+
+        if (result.retCode != 0) {
+            throw Exception("Failed to fetch positions: ${result.retMsg}")
+        }
+        // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
+        return result.result.success == "1"
     }
 
 // ------------------------------------------------------------
@@ -349,15 +405,12 @@ class CoreFeature(private val httpClient: HttpClient) {
         )
 
         val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
-        if (side != null) {
-            val opposite = if (side == "Buy") "Sell" else "Buy"
+        if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
             logger.info("Close and open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-            val response1 = authenticatedOrder("$url/v5/order/create", orderRequest.copy(side = opposite))
+            val response1 = cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
+            logger.info("Cancelling all order: $response1")
             val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
-            if (response1.retCode != 0) {
-                throw Exception("Order failed: ${response1.retMsg}")
-            }
             if (response2.retCode != 0) {
                 throw Exception("Order failed: ${response2.retMsg}")
             }
