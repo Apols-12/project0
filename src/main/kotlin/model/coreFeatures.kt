@@ -57,7 +57,7 @@ class CoreFeature(private val httpClient: HttpClient) {
     @Serializable
     data class CancelOrderResponse(
         val list: List<CanceledOrder>,
-        val success: String
+        val success: String?
     )
     @Serializable
     data class Result(
@@ -334,6 +334,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         val signature = generatePostSign( jsonBody = bodyJson, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
 
         val response = httpClient.post("$url/v5/order/cancel-all") {
+            contentType(ContentType.Application.Json)
             headers.append("X-BAPI-SIGN", signature)
             headers.append("X-BAPI-API-KEY", apiKey)
             headers.append("X-BAPI-TIMESTAMP", timestamp)
@@ -346,7 +347,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         val result = json.decodeFromString<BybitResponse<CancelOrderResponse>>(response.bodyAsText())
 
         if (result.retCode != 0) {
-            throw Exception("Failed to fetch positions: ${result.retMsg}")
+            throw Exception("Failed to cancel positions: ${result.retMsg}")
         }
         // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
         return result.result.success == "1"
