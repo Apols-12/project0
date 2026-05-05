@@ -306,14 +306,14 @@ class GoldenCrossStrategy(
     private val longPeriod: Int = 200
 ) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
-        val shortNow = klines.sma(shortPeriod) ?: return Prediction.Neutral
-        val longNow = klines.sma(longPeriod) ?: return Prediction.Neutral
+        val shortNow = klines.ema(shortPeriod) ?: return Prediction.Neutral
+        val longNow = klines.ema(longPeriod) ?: return Prediction.Neutral
         if (klines.size <= longPeriod) return Prediction.Neutral
 
         // Previous values for crossover detection
         val prevList = klines.dropLast(1)
-        val shortPrev = prevList.sma(shortPeriod) ?: return Prediction.Neutral
-        val longPrev = prevList.sma(longPeriod) ?: return Prediction.Neutral
+        val shortPrev = prevList.ema(shortPeriod) ?: return Prediction.Neutral
+        val longPrev = prevList.ema(longPeriod) ?: return Prediction.Neutral
 
         if (shortPrev <= longPrev && shortNow > longNow) {
             return Prediction.Buy(0.9)   // Golden Cross

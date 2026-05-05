@@ -71,8 +71,7 @@ data class BotConfig(
     val interval: String,
     val shortPeriod: Int,
     val threshold: Double,
-    val demo: Boolean,
-    val overTrade: Boolean = true
+    val demo: Boolean
 )
 
 data class TKlines(

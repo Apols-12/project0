@@ -270,7 +270,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         symbol: String,
         category: String = "linear",
         useDemo: Boolean
-    ): Boolean {
+    ): String? {
         val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
         val timestamp = System.currentTimeMillis().toString()
         val queryString = "category=$category&symbol=$symbol"
@@ -288,13 +288,12 @@ class CoreFeature(private val httpClient: HttpClient) {
         logger.info("Check open position................................................................")
 
         val result = json.decodeFromString<BybitResponse<PositionListResult>>(response.bodyAsText())
-        println(result)
 
         if (result.retCode != 0) {
             throw Exception("Failed to fetch positions: ${result.retMsg}")
         }
         // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
-        return result.result.list.any { (it.size.toDoubleOrNull() ?: 0.0) > 0.000001 }
+        return result.result.list.firstOrNull()?.side
     }
 
 // ------------------------------------------------------------
@@ -349,11 +348,12 @@ class CoreFeature(private val httpClient: HttpClient) {
             slTriggerBy = "MarkPrice"
         )
 
-        if (hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)) {
-
+        val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
+        if (side != null) {
+            val opposite = if (side == "Buy") "Sell" else "Buy"
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
             logger.info("Close and open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-            val response1 = authenticatedOrder("$url/v5/order/create", orderRequest)
+            val response1 = authenticatedOrder("$url/v5/order/create", orderRequest.copy(side = opposite))
             val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
             if (response1.retCode != 0) {
                 throw Exception("Order failed: ${response1.retMsg}")

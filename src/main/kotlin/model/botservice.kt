@@ -17,11 +17,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val strategies = listOf(
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 1.0,
-            RsiStrategy(period = config.shortPeriod, oversoldThreshold = 30.0, overboughtThreshold = 70.0) to 0.5,
+            SmaCrossoverStrategy(shortPeriod = 20, longPeriod = 50) to 0.8,
+            SmaCrossoverStrategy(shortPeriod = 50, longPeriod = 100) to 0.9,
+            RsiStrategy(period = 20, oversoldThreshold = 30.0, overboughtThreshold = 70.0) to 0.5,
             MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 1.2,
-            BollingerBandsStrategy(period = 20, numStdDev = 2.0, requireCrossover = true) to 0.8,
-            StochasticStrategy() to 0.7,
-            VwapStrategy() to 0.3,
             GoldenCrossStrategy(shortPeriod = 50, longPeriod = 200) to 1.5,
             IchimokuStrategy() to 1.0
         )
@@ -108,25 +107,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             }
 
             else -> {
-                if(config.overTrade) {
-                    if(!coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo ) && dir != "Neutral") {
-                        coreFeature.placeOrderWithTPSL(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            side = dir,
-                            symbol = config.symbol,
-                            quantity = config.qty,
-                            leverage = config.leverage,
-                            takeProfitPercent = config.tpPercent,
-                            stopLossPercent = config.slPercent,
-                            category = config.category,
-                            useDemo = config.demo
-                        )
-                        logger.info("Opening another position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
-                    }
-                } else {
-                    logger.info("No need Change position for the moment or place new order>>>>>>>>><<<<<<<<<<<>>>>>>>>>>>><<<<<<<>>>>>>>>>>><<<<<<<<<>>>>>>>>>>>")
-                }
                 return currentPosition
             }
         }
