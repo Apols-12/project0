@@ -49,6 +49,8 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
+        val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
+
         when {
             currentPosition == null && actualDir == 2 -> {
                 logger.info("Patience no need to open a position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
@@ -81,25 +83,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            config.overTrade && actualDir != 2  -> {
-                logger.info("Over trade is configured___________________________________________ ")
-                val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
-                if (!hasOpenPosition) {
-                    coreFeature.placeOrderWithTPSL(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = dir,
-                        symbol = config.symbol,
-                        quantity = config.qty,
-                        leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
-                        category = config.category,
-                        useDemo = config.demo
-                    )
-                    return actualDir
-                }
-            }
 
             actualDir == 0 && currentPosition == 1 -> {
                 coreFeature.placeOrderWithTPSL(
@@ -134,10 +117,26 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
+            config.overTrade && actualDir != 2 && !hasOpenPosition -> {
+                logger.info("Over trade is configured___________________________________________ ")
+                coreFeature.placeOrderWithTPSL(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
+                )
+                return actualDir
+            }
+
             else -> {
                 return currentPosition
             }
         }
-        return null
     }
 }
