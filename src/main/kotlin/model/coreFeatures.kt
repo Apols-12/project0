@@ -411,13 +411,15 @@ class CoreFeature(private val httpClient: HttpClient) {
         val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
         if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
-            val response1 = cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
-            logger.info("Cancelling all order: $response1")
-            delay(5.seconds)
-            val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
-            logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-            if (response2.retCode != 0) {
-                throw Exception("Order failed: ${response2.retMsg}")
+
+            runBlocking {
+                val response1 = cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
+                logger.info("Cancelling all order: $response1")
+                val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
+                logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
+                if (response2.retCode != 0) {
+                    throw Exception("Order failed: ${response2.retMsg}")
+                }
             }
 
         } else {
