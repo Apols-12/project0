@@ -65,7 +65,23 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            config.overTrade && actualDir != 2 -> {
+            currentPosition == null && actualDir != 2-> {
+                coreFeature.placeOrderWithTPSL(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
+                )
+                return actualDir
+            }
+
+            config.overTrade && actualDir != 2  -> {
                 logger.info("Over trade is configured___________________________________________ ")
                 val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 if (!hasOpenPosition) {
@@ -83,21 +99,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     )
                     return actualDir
                 }
-            }
-            currentPosition == null && actualDir != 2-> {
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
-                return actualDir
             }
 
             actualDir == 0 && currentPosition == 1 -> {
