@@ -10,6 +10,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -19,6 +21,7 @@ import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.time.Duration.Companion.seconds
 import kotlin.use
 
 private val RECV_WINDOW = "5000"
@@ -408,10 +411,11 @@ class CoreFeature(private val httpClient: HttpClient) {
         val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
         if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
-            logger.info("Close and open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
             val response1 = cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
             logger.info("Cancelling all order: $response1")
+            delay(5.seconds)
             val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
+            logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
             if (response2.retCode != 0) {
                 throw Exception("Order failed: ${response2.retMsg}")
             }

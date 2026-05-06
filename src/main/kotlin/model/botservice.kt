@@ -18,10 +18,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val strategies = listOf(
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 1.0,
             SmaCrossoverStrategy(shortPeriod = 20, longPeriod = 50) to 1.2,
-            SmaCrossoverStrategy(shortPeriod = 50, longPeriod = 100) to 1.4,
-            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 1.2,
-            GoldenCrossStrategy(shortPeriod = 50, longPeriod = 200) to 1.5,
-            IchimokuStrategy() to 1.0
+            SmaCrossoverStrategy(shortPeriod = 50, longPeriod = 100) to 1.5,
+            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 0.8,
+            GoldenCrossStrategy(shortPeriod = 50, longPeriod = 200) to 2.0,
+            IchimokuStrategy() to 0.7
         )
 
         val predictorConfig = EngineConfig(
@@ -50,11 +50,40 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
         when {
-            actualDir == 2 -> {
-                logger.info("Patience no need to change the position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
+            currentPosition == null && actualDir == 2 -> {
+                logger.info("Patience no need to open a position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
                 return actualDir
             }
 
+            currentPosition == 2 && actualDir == 2-> {
+                logger.info("_________________________________________________________________waiting for clear signal")
+                return actualDir
+            }
+
+            currentPosition != 2 && actualDir == 2 -> {
+                logger.info("<><><><<<<<<<>>>>>>><<<<<>>>>>><<<<>>>>>>>>Wait for clear signal")
+                return actualDir
+            }
+
+            config.overTrade && actualDir != 2 -> {
+                logger.info("Over trade is configured___________________________________________ ")
+                val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
+                if (!hasOpenPosition) {
+                    coreFeature.placeOrderWithTPSL(
+                        apiKey = config.apiKey,
+                        secret = config.secretKey,
+                        side = dir,
+                        symbol = config.symbol,
+                        quantity = config.qty,
+                        leverage = config.leverage,
+                        takeProfitPercent = config.tpPercent,
+                        stopLossPercent = config.slPercent,
+                        category = config.category,
+                        useDemo = config.demo
+                    )
+                    return actualDir
+                }
+            }
             currentPosition == null && actualDir != 2-> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
@@ -71,7 +100,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            actualDir == 0 && currentPosition != 0 -> {
+            actualDir == 0 && currentPosition == 1 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -87,7 +116,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            actualDir == 1 && currentPosition != 1 -> {
+            actualDir == 1 && currentPosition == 0 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -108,5 +137,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return currentPosition
             }
         }
+        return null
     }
 }

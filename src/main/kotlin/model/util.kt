@@ -71,6 +71,7 @@ data class BotConfig(
     val interval: String,
     val shortPeriod: Int,
     val threshold: Double,
+    val overTrade: Boolean,
     val demo: Boolean
 )
 
