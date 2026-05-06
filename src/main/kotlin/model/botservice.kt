@@ -19,7 +19,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 1.0,
             SmaCrossoverStrategy(shortPeriod = 20, longPeriod = 50) to 1.2,
             SmaCrossoverStrategy(shortPeriod = 50, longPeriod = 100) to 1.5,
-            MacdCrossoverStrategy(slow = config.longPeriod, fast = config.shortPeriod) to 0.8,
+            MacdCrossoverStrategy() to 0.8,
             GoldenCrossStrategy(shortPeriod = 50, longPeriod = 200) to 2.0,
             IchimokuStrategy() to 0.7
         )
