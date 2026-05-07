@@ -184,6 +184,7 @@ class CoreFeature(private val httpClient: HttpClient) {
             "slTriggerBy" to body.slTriggerBy
         )
 
+        delay(5.seconds)
         val timestamp = System.currentTimeMillis().toString()
 
         val bodyJson = JSON.toJSONString(params)
@@ -420,7 +421,7 @@ class CoreFeature(private val httpClient: HttpClient) {
             val response1 = scope.async {  cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo) }.await()
             logger.info("Cancelling all order: $response1")
             logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-
+            delay(5.seconds)
             val response2 = scope.async {  authenticatedOrder("$url/v5/order/create", orderRequest) }.await()
             if (response2.retCode != 0) {
                 throw Exception("Order failed: ${response2.retMsg}")

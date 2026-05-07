@@ -154,9 +154,9 @@ fun main() {
                                         qty = "4",
                                         apiKey = "J8QbxjasCNfIZ1mSc1",
                                         secretKey = "TnxQDH4RG19E7MgCPbaVJIL36aZMh8fWIu6l",
-                                        longPeriod = 50,
+                                        longPeriod = 100,
                                         interval = "30",
-                                        shortPeriod = 100,
+                                        shortPeriod = 50,
                                         threshold = 0.5,
                                         overTrade = true,
                                         demo = true
