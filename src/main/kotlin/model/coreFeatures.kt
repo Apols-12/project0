@@ -10,6 +10,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -371,6 +375,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         category: String = "linear",
         useDemo: Boolean
     ) {
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
         // 1. Set leverage first
         val leverageOk = setLeverage(apiKey = apiKey, secret = secret, symbol = symbol, category = category, leverage = leverage, baseUrl = url)
@@ -412,14 +417,13 @@ class CoreFeature(private val httpClient: HttpClient) {
         if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
 
-            runBlocking {
-                val response1 = cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
-                logger.info("Cancelling all order: $response1")
-                val response2 = authenticatedOrder("$url/v5/order/create", orderRequest)
-                logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-                if (response2.retCode != 0) {
-                    throw Exception("Order failed: ${response2.retMsg}")
-                }
+            val response1 = scope.async {  cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo) }.await()
+            logger.info("Cancelling all order: $response1")
+            logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
+
+            val response2 = scope.async {  authenticatedOrder("$url/v5/order/create", orderRequest) }.await()
+            if (response2.retCode != 0) {
+                throw Exception("Order failed: ${response2.retMsg}")
             }
 
         } else {
