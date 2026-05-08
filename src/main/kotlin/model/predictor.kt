@@ -480,7 +480,7 @@ class PredictionEngine(private val config: EngineConfig) {
         val buyRatio = buyScore / totalWeight
         val sellRatio = sellScore / totalWeight
 
-        logger.debug { "Buy ratio: $buyRatio, Sell ratio: $sellRatio" }
+        logger.info("Buy ratio: $buyRatio, Sell ratio: $sellRatio" )
 
         return when {
             buyRatio >= config.biasThreshold && buyRatio > sellRatio ->

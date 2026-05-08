@@ -2,6 +2,7 @@ package com.apols.model
 
 import com.alibaba.fastjson.JSON
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -190,6 +191,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         val bodyJson = JSON.toJSONString(params)
         val signature = generatePostSign(jsonBody = bodyJson,  timestamp = timestamp, apiKey = body.apiKey, secret = body.secret)
 
+        logger.info("Open new order>>>>>>>>>>>>>>>>><<<<<<<>>>>>>>>>>><<<<<<<<<>>>>>>>>>>>>>>>>>>")
         val response = httpClient.post(endpoint) {
             contentType(ContentType.Application.Json)
             headers.append("X-BAPI-SIGN", signature)
@@ -289,6 +291,38 @@ class CoreFeature(private val httpClient: HttpClient) {
      * @param category "linear" (USDT perpetual) or "inverse" (coin perpetual)
      * @return true if any position has size > 0
      */
+    suspend fun getOpenPositions(
+        apiKey: String,
+        secret: String,
+        symbol: String,
+        category: String = "linear",
+        useDemo: Boolean
+    ): List<PositionData> {
+        val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
+        val timestamp = System.currentTimeMillis().toString()
+        val queryString = "category=$category&symbol=$symbol"
+        val signature = generatePostSign( jsonBody = queryString, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
+
+        val response = httpClient.get("$url/v5/position/list") {
+            parameter("category", category)
+            parameter("symbol", symbol)
+            headers.append("X-BAPI-SIGN", signature)
+            headers.append("X-BAPI-API-KEY", apiKey)
+            headers.append("X-BAPI-TIMESTAMP", timestamp)
+            headers.append("X-BAPI-RECV-WINDOW", RECV_WINDOW)
+        }
+
+        logger.info("Get open positions...............................................................")
+
+        val result = json.decodeFromString<BybitResponse<PositionListResult>>(response.bodyAsText())
+
+        if (result.retCode != 0) {
+            throw Exception("Failed to fetch positions: ${result.retMsg}")
+        }
+        // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
+        return result.result.list
+    }
+
     suspend fun hasOpenPosition(
         apiKey: String,
         secret: String,
@@ -321,6 +355,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         return result.result.list.map { it.size }.any { it > "0.00001" }
     }
 
+
     suspend fun cancelOpenPosition(
         apiKey: String,
         secret: String,
@@ -350,7 +385,7 @@ class CoreFeature(private val httpClient: HttpClient) {
             setBody(bodyJson)
         }
 
-        logger.info("Check open position................................................................")
+        logger.info("Cancel all open order................................................................")
 
         val result = json.decodeFromString<BybitResponse<CancelOrderResponse>>(response.bodyAsText())
 
@@ -361,6 +396,46 @@ class CoreFeature(private val httpClient: HttpClient) {
         return result.result.success == "1"
     }
 
+    suspend fun closeOpenPositions(
+        apiKey: String,
+        secret: String,
+        symbol: String,
+        category: String,
+        useDemo: Boolean
+    ) {
+        val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
+        val positions = getOpenPositions(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
+
+        for (pos in positions) {
+            val closeSide = if (pos.side.equals("Buy", ignoreCase = true)) "Sell" else "Buy"
+            val params = mutableMapOf<String, Any?>(
+                "category" to category,
+                "symbol" to symbol,
+                "side" to closeSide,
+                "orderType" to "Market",
+                "qty" to pos.size,
+                "positionIdx" to pos.positionIdx,
+
+            )
+
+            val timestamp = System.currentTimeMillis().toString()
+
+            val bodyJson = JSON.toJSONString(params)
+            val signature = generatePostSign( jsonBody = bodyJson, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
+
+            val response = httpClient.post("$url/v5/order/create") {
+                contentType(ContentType.Application.Json)
+                headers.append("X-BAPI-SIGN", signature)
+                headers.append("X-BAPI-API-KEY", apiKey)
+                headers.append("X-BAPI-TIMESTAMP", timestamp)
+                headers.append("X-BAPI-RECV-WINDOW", RECV_WINDOW)
+                setBody(bodyJson)
+            }.body<BybitResponse<OrderResult>>()
+
+            logger.info("Close order placed>>>>>>>>>>>>>>>>>>>>>>>>>>>>${response.retCode}")
+        }
+
+    }
 // ------------------------------------------------------------
 // 3. Place Order with TP/SL (Percentages)                    ||
 // ------------------------------------------------------------
@@ -417,11 +492,8 @@ class CoreFeature(private val httpClient: HttpClient) {
         val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
         if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
-
-            val response1 = scope.async {  cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo) }.await()
-            logger.info("Cancelling all order: $response1")
-            logger.info("open new position......>....>...>...>...>...>...>...>...>...>...>...>...>")
-            delay(5.seconds)
+//            cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
+            closeOpenPositions(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
             val response2 = scope.async {  authenticatedOrder("$url/v5/order/create", orderRequest) }.await()
             if (response2.retCode != 0) {
                 throw Exception("Order failed: ${response2.retMsg}")
