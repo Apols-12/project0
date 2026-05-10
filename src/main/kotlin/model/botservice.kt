@@ -58,17 +58,12 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         when {
             currentPosition == null && actualDir == 2 -> {
                 logger.info("Patience no need to open a position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
-                return actualDir
-            }
-
-            currentPosition == 2 && actualDir == 2-> {
-                logger.info("_________________________________________________________________waiting for clear signal")
-                return actualDir
+                return currentPosition
             }
 
             currentPosition != 2 && actualDir == 2 -> {
                 logger.info("<><><><<<<<<<>>>>>>><<<<<>>>>>><<<<>>>>>>>>Wait for clear signal")
-                return actualDir
+                return currentPosition 
             }
 
             currentPosition == null && actualDir != 2-> {
