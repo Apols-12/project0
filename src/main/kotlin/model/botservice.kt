@@ -62,7 +62,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             }
 
             currentPosition == 2 && actualDir == 2-> {
-                logger.info("_________________________________________________________________waiting for clear signal")
+                coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 return actualDir
             }
 
@@ -87,6 +87,21 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
+            currentPosition == 2 && actualDir != 2 -> {
+                coreFeature.placeOrderWithTPSL(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
+                )
+                return actualDir
+            }
 
             actualDir == 0 && currentPosition == 1 -> {
                 coreFeature.placeOrderWithTPSL(
