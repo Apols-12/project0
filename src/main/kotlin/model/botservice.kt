@@ -63,7 +63,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            currentPosition == 2 && smoothedDir == 2-> {
+            currentPosition == 2 && smoothedDir == 2 && hasOpenPosition -> {
                 coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 return actualDir
             }
