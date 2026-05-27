@@ -68,6 +68,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
+            currentPosition == 2 && smoothedDir == 2 && !hasOpenPosition -> {
+                logger.info("<<<<<<<<>>>>>>>>>>>>>>>><<<<<<<>>>>>>>>>............wait for signal")
+                return actualDir
+            }
+
             currentPosition != 2 && smoothedDir == 2 -> {
                 logger.info("<><><><<<<<<<>>>>>>><<<<<>>>>>><<<<>>>>>>>>Wait for clear signal")
                 return actualDir
