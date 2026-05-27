@@ -20,6 +20,7 @@ class BotManager(private val service: BotService) {
     private val activeBots = ConcurrentHashMap<String, Job>()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     val position =  mutableMapOf<String, Int?>()
+    val predictions = mutableListOf<Int>()
     val mutex = Mutex()
     private val logger = KotlinLogging.logger("bot_manager_logs")
     val botStatus get() =  activeBots.mapValues {
@@ -33,7 +34,8 @@ class BotManager(private val service: BotService) {
                 while (isActive) {
                     try {
                         val currentPosition = position[config.botName]
-                        val newPosition = service.start(config, currentPosition)
+                        val newPosition = service.start(config, currentPosition, predictions)
+                        if (newPosition != null) predictions.add(newPosition)
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
                         }

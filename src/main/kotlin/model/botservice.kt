@@ -6,7 +6,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentPosition: Int?): Int? {
+    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int? {
 
         val data = candles.getKline(
             baseUrl = "https://api.bybit.com/v5/market/kline",
@@ -49,29 +49,31 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             is Prediction.Neutral -> 2
         }
 
-        val dir = direction[actualDir].toString()
+        val smoothed = positions.count { if (actualDir != 2) it == actualDir else false } > (config.interval.toInt())*2
+        val smoothedDir = if (smoothed) actualDir else 2
+        val dir = direction[smoothedDir].toString()
 
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
 
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         when {
-            currentPosition == null && actualDir == 2 -> {
+            currentPosition == null && smoothedDir == 2 -> {
                 logger.info("Patience no need to open a position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
                 return actualDir
             }
 
-            currentPosition == 2 && actualDir == 2-> {
+            currentPosition == 2 && smoothedDir == 2-> {
                 coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 return actualDir
             }
 
-            currentPosition != 2 && actualDir == 2 -> {
+            currentPosition != 2 && smoothedDir == 2 -> {
                 logger.info("<><><><<<<<<<>>>>>>><<<<<>>>>>><<<<>>>>>>>>Wait for clear signal")
                 return actualDir
             }
 
-            currentPosition == null && actualDir != 2-> {
+            currentPosition == null && smoothedDir != 2-> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -87,7 +89,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            currentPosition == 2 && actualDir != 2 -> {
+            currentPosition == 2 && smoothedDir != 2 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -100,10 +102,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
+                positions.clear()
                 return actualDir
             }
 
-            actualDir == 0 && currentPosition == 1 -> {
+            currentPosition == 1 && smoothedDir == 0 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -116,10 +119,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
+                positions.clear()
                 return actualDir
             }
 
-            actualDir == 1 && currentPosition == 0 -> {
+            smoothedDir == 1 && currentPosition == 0 -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -132,11 +136,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
-
+                positions.clear()
                 return actualDir
             }
 
-            config.overTrade && actualDir != 2 && !hasOpenPosition -> {
+            config.overTrade && smoothedDir != 2 && !hasOpenPosition -> {
                 logger.info("Over trade is configured___________________________________________ ")
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
@@ -150,6 +154,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
+                positions.clear()
                 return actualDir
             }
 
