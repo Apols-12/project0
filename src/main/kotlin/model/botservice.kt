@@ -49,7 +49,9 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             is Prediction.Neutral -> 2
         }
 
-        val smoothed = positions.count { if (actualDir != 2) it == actualDir else false } > (config.interval.toInt())*2
+        if(positions.contains(2)) positions.clear()
+
+        val smoothed = positions.count { it == actualDir } > config.interval.toInt()
         val smoothedDir = if (smoothed) actualDir else 2
         val dir = direction[smoothedDir].toString()
 
