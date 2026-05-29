@@ -6,7 +6,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int? {
+    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
 
         val data = candles.getKline(
             baseUrl = "https://api.bybit.com/v5/market/kline",
@@ -60,27 +60,18 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         when {
-            currentPosition == null && smoothedDir == 2 -> {
-                logger.info("Patience no need to open a position>>>>>>>>........>>>>>>>>>>>>>........>>>>>>>>>>.................>>>>>>>>>>>>>>>")
-                return actualDir
-            }
 
-            currentPosition == 2 && smoothedDir == 2 && hasOpenPosition -> {
+            smoothedDir == 2 && hasOpenPosition -> {
                 coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 return actualDir
             }
 
-            currentPosition == 2 && smoothedDir == 2 && !hasOpenPosition -> {
-                logger.info("<<<<<<<<>>>>>>>>>>>>>>>><<<<<<<>>>>>>>>>............wait for signal")
+            smoothedDir == 2 && !hasOpenPosition -> {
+                logger.info("<<<<<<<<>>>>>>>>>>>>>>>><<<<<<<wait for clear signal>>>>>>>>>")
                 return actualDir
             }
 
-            currentPosition != 2 && smoothedDir == 2 -> {
-                logger.info("<><><><<<<<<<>>>>>>><<<<<>>>>>><<<<>>>>>>>>Wait for clear signal")
-                return actualDir
-            }
-
-            currentPosition == null && smoothedDir != 2-> {
+            !hasOpenPosition && config.overTrade -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -96,7 +87,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            currentPosition == 2 && smoothedDir != 2 -> {
+            smoothedDir != 2 && !hasOpenPosition -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -109,64 +100,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     category = config.category,
                     useDemo = config.demo
                 )
-                positions.clear()
-                return actualDir
-            }
-
-            currentPosition == 1 && smoothedDir == 0 -> {
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
-                positions.clear()
-                return actualDir
-            }
-
-            smoothedDir == 1 && currentPosition == 0 -> {
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
-                positions.clear()
-                return actualDir
-            }
-
-            config.overTrade && smoothedDir != 2 && !hasOpenPosition -> {
-                logger.info("Over trade is configured___________________________________________ ")
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
-                positions.clear()
                 return actualDir
             }
 
             else -> {
-                return currentPosition
+                return actualDir
             }
         }
     }

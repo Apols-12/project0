@@ -35,7 +35,7 @@ class BotManager(private val service: BotService) {
                     try {
                         val currentPosition = position[config.botName]
                         val newPosition = service.start(config, currentPosition, predictions)
-                        if (newPosition != null) predictions.add(newPosition)
+                        predictions.add(newPosition)
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
                         }
