@@ -17,15 +17,15 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val strategies = listOf(
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 0.05,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 5) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 13) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 6) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 7) to 0.2,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 5) to 0.5,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 13) to 0.2,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 6) to 0.5,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 7) to 0.5,
             SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 8) to 0.2,
             SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 9) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 10) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 11) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 12) to 0.5,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 10) to 0.2,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 11) to 0.2,
+            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 12) to 0.2,
         )
 
         val predictorConfig = EngineConfig(
@@ -51,7 +51,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         if(positions.contains(2)) positions.clear()
 
-        val smoothed = positions.count { it == actualDir } > config.interval.toInt()*2
+        val smoothed = positions.count { it == actualDir } > config.interval.toInt()
         val smoothedDir = if (smoothed) actualDir else 2
         val dir = direction[smoothedDir].toString()
 
@@ -87,7 +87,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            positions.size > config.interval.toInt()*2 + 10 && !hasOpenPosition -> {
+            positions.size > config.interval.toInt() + 10 && !hasOpenPosition -> {
                 logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 return actualDir
             }
