@@ -7,13 +7,12 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
+        val intervalWeigh = mutableMapOf("3" to 0.4, "5" to 0.4, "15" to 0.3, "30" to 0.2, "60" to 0.1)
+        val signals = mutableMapOf<Class<out Prediction>, Double>()
 
-        val data = candles.getKline(
-            baseUrl = "https://api.bybit.com/v5/market/kline",
-            symbol = config.symbol,
-            interval = config.interval,
-            limit = 1000
-        )
+        var prediction: Prediction
+        val intervalSignals = mutableMapOf<String, Double>()
+        var totalWeight = 0.0
 
         val strategies = listOf(
             SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 0.05,
@@ -33,9 +32,60 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             minRequiredSignals = 1,
             biasThreshold = config.threshold
         )
-        val predictor = PredictionEngine(predictorConfig)
 
-        val prediction = predictor.predict(data)
+        for ((interval, weigh) in intervalWeigh) {
+            try {
+                val klines = candles.getKline(
+                    baseUrl = "https://api.bybit.com/v5/market/kline",
+                    symbol = config.symbol,
+                    interval = config.interval,
+                    limit = 1000
+                )
+                val engine = PredictionEngine(predictorConfig)
+                val prediction = engine.predict(klines)
+                when(prediction) {
+                    is Prediction.Buy -> {
+                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
+                        signals[Prediction.Buy::class.java] =
+                            (signals[Prediction.Buy::class.java] ?: 0.0) + weigh * prediction.confidence
+                        totalWeight += weigh
+                    }
+
+                    is Prediction.Sell -> {
+                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) + weigh * prediction.confidence
+                        signals[Prediction.Sell::class.java] =
+                            (signals[Prediction.Sell::class.java] ?: 0.0) + weigh * prediction.confidence
+                        totalWeight += weigh
+                    }
+
+                    is Prediction.Neutral -> { }
+                }
+                logger.info("Interval $interval __________________prediction $prediction")
+            } catch (e: Exception) {
+                logger.info("Failed for interval $interval _______________________with exception: ${e.message}")
+            }
+        }
+
+        if (totalWeight == 0.0 || intervalSignals.isEmpty()) {
+            prediction = Prediction.Neutral
+            logger.info("No valid signals generated, returning Neutral for now: $prediction")
+        }
+
+        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
+        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
+
+        val buyRatio = buyScore / totalWeight
+        val sellRatio = sellScore / totalWeight
+
+        logger.debug { "Buy ratio: $buyRatio, Sell ratio: $sellRatio from the bot" }
+
+        prediction = when {
+            buyRatio >= predictorConfig.biasThreshold && buyRatio > sellRatio ->
+                Prediction.Buy(buyRatio)
+            sellRatio >= predictorConfig.biasThreshold && sellRatio > buyRatio ->
+                Prediction.Sell(sellRatio)
+            else -> Prediction.Neutral
+        }
 
         val direction = mapOf(
             0 to "Buy",
@@ -51,7 +101,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         if(positions.contains(2)) positions.clear()
 
-        val smoothed = positions.count { it == actualDir } > config.interval.toInt()
+        val smoothed = positions.count { it == actualDir } > config.interval.toInt() / 4
         val smoothedDir = if (smoothed) actualDir else 2
         val dir = direction[smoothedDir].toString()
 
