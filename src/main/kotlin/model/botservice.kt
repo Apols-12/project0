@@ -7,7 +7,15 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
-        val intervalWeigh = mutableMapOf("3" to 0.4, "5" to 0.4, "15" to 0.3, "30" to 0.2, "60" to 0.1)
+        val intervalConfig = config.intervalConfig
+        val intervalWeigh = mutableMapOf(
+            "1" to intervalConfig.config1m,
+            "3" to intervalConfig.config3m,
+            "5" to intervalConfig.config5m,
+            "15" to intervalConfig.config15m,
+            "30" to intervalConfig.config30m,
+            "60" to intervalConfig.config60m,
+        )
         val signals = mutableMapOf<Class<out Prediction>, Double>()
 
         var prediction: Prediction
@@ -77,7 +85,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val buyRatio = buyScore / totalWeight
         val sellRatio = sellScore / totalWeight
 
-        logger.debug { "Buy ratio: $buyRatio, Sell ratio: $sellRatio from the bot" }
+        logger.info( "Buy ratio: $buyRatio, Sell ratio: $sellRatio from the bot" )
 
         prediction = when {
             buyRatio >= predictorConfig.biasThreshold && buyRatio > sellRatio ->
@@ -137,7 +145,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            positions.size > config.interval.toInt() / 3 + 5 && !hasOpenPosition -> {
+            positions.size > config.interval.toInt() / 3 + 1  && !hasOpenPosition -> {
                 logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 return actualDir
             }

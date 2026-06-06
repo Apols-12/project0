@@ -9,6 +9,7 @@ import com.apols.model.BotConfig
 import com.apols.model.BotManager
 import com.apols.model.BotService
 import com.apols.model.CoreFeature
+import com.apols.model.IntervalConfig
 import com.apols.model.NetworkService
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.config.AuthScheme
@@ -148,17 +149,18 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
-                                        tpPercent = 0.1,
-                                        slPercent = 0.2,
-                                        leverage = 20,
-                                        qty = "4",
+                                        tpPercent = 0.03,
+                                        slPercent = 0.1,
+                                        leverage = 10,
+                                        qty = "10",
                                         apiKey = "J8QbxjasCNfIZ1mSc1",
                                         secretKey = "TnxQDH4RG19E7MgCPbaVJIL36aZMh8fWIu6l",
-                                        longPeriod = 100,
-                                        interval = "30",
-                                        shortPeriod = 50,
+                                        longPeriod = 23,
+                                        interval = "60",
+                                        intervalConfig = IntervalConfig(),
+                                        shortPeriod = 13,
                                         threshold = 0.5,
-                                        overTrade = true,
+                                        overTrade = false,
                                         demo = true
                                     )
                                 }
