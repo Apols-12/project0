@@ -355,47 +355,6 @@ class CoreFeature(private val httpClient: HttpClient) {
         return result.result.list.map { it.size }.any { it > "0.00001" }
     }
 
-
-    suspend fun cancelOpenPosition(
-        apiKey: String,
-        secret: String,
-        symbol: String,
-        category: String = "linear",
-        useDemo: Boolean
-    ): Boolean {
-        val url = if (useDemo) BYBIT_TESTNET else BYBIT_MAINNET
-        val body = CancelOrder(category = category, symbol = symbol)
-
-        val params = mutableMapOf<String, Any?>(
-            "category" to body.category,
-            "symbol" to body.symbol,
-        )
-
-        val timestamp = System.currentTimeMillis().toString()
-
-        val bodyJson = JSON.toJSONString(params)
-        val signature = generatePostSign( jsonBody = bodyJson, timestamp = timestamp, apiKey = apiKey, secret = secret) // No request body for GET
-
-        val response = httpClient.post("$url/v5/order/cancel-all") {
-            contentType(ContentType.Application.Json)
-            headers.append("X-BAPI-SIGN", signature)
-            headers.append("X-BAPI-API-KEY", apiKey)
-            headers.append("X-BAPI-TIMESTAMP", timestamp)
-            headers.append("X-BAPI-RECV-WINDOW", RECV_WINDOW)
-            setBody(bodyJson)
-        }
-
-        logger.info("Cancel all open order................................................................")
-
-        val result = json.decodeFromString<BybitResponse<CancelOrderResponse>>(response.bodyAsText())
-
-        if (result.retCode != 0) {
-            throw Exception("Failed to cancel positions: ${result.retMsg}")
-        }
-        // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
-        return result.result.success == "1"
-    }
-
     suspend fun closeOpenPositions(
         apiKey: String,
         secret: String,
