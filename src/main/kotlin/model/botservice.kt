@@ -108,7 +108,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         if(positions.contains(2)) positions.clear()
 
-        val smoothed = positions.count { it == actualDir } > config.interval.toInt() / 3
+        val smoothed = positions.count { it == actualDir } > config.interval.toInt()
         val smoothedDir = if (smoothed) actualDir else 2
         val dir = direction[smoothedDir].toString()
 
@@ -144,7 +144,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            positions.size > config.interval.toInt() / 3 + 1  && !hasOpenPosition -> {
+            positions.size > config.interval.toInt() + 2  && !hasOpenPosition -> {
                 logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 return actualDir
             }
