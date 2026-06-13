@@ -69,6 +69,7 @@ data class BotConfig(
     val secretKey: String,
     val longPeriod: Int,
     val interval: String,
+    val patience: Int,
     val intervalConfig: IntervalConfig,
     val shortPeriod: Int,
     val threshold: Double,
