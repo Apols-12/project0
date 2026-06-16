@@ -40,6 +40,14 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             biasThreshold = config.threshold
         )
 
+
+        val kline = candles.getKline(
+            baseUrl = "https://api.bybit.com/v5/market/kline",
+            symbol = config.symbol,
+            interval = config.interval,
+            limit = 100
+        ).dropLast(2).takeLast(1).first()
+
         for ((interval, weigh) in intervalWeigh) {
             try {
                 val klines = candles.getKline(
@@ -109,7 +117,23 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         if(positions.contains(2)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > config.interval.toInt() * config.patience
-        val smoothedDir = if (smoothed) actualDir else 2
+
+        val upConfirmed = kline.open == kline.low
+        val downConfirmed = kline.open == kline.high
+
+        val smoothedDirConfirmed = if (smoothed) actualDir else 2
+
+        val smoothedDir = when {
+
+            smoothedDirConfirmed == 0 && downConfirmed -> 2
+
+            smoothedDirConfirmed == 1 && upConfirmed -> 2
+
+            smoothedDirConfirmed == 2 -> 2
+
+            else -> smoothedDirConfirmed
+        }
+
         val dir = direction[smoothedDir].toString()
 
         logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
