@@ -85,6 +85,7 @@ data class IntervalConfig(
     val config120m: Double = 0.3,
     val config240m: Double = 0.3
 )
+
 data class TKlines(
     val close: Double,
     val change: Double,

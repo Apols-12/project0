@@ -8,6 +8,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
     suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
         val intervalConfig = config.intervalConfig
+
         val intervalWeigh = mutableMapOf(
             "15" to intervalConfig.config15m,
             "30" to intervalConfig.config30m,
@@ -15,6 +16,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             "120" to intervalConfig.config120m,
             "240" to intervalConfig.config240m
         )
+
         val signals = mutableMapOf<Class<out Prediction>, Double>()
 
         var prediction: Prediction
@@ -46,7 +48,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             symbol = config.symbol,
             interval = config.interval,
             limit = 100
-        ).dropLast(2).takeLast(1).first()
+        ).dropLast(1).takeLast(1).first()
 
         for ((interval, weigh) in intervalWeigh) {
             try {
