@@ -6,7 +6,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
+    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>, confirmations: MutableList<Int>): Int {
         val intervalConfig = config.intervalConfig
 
         val intervalWeigh = mutableMapOf(
@@ -23,18 +23,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val intervalSignals = mutableMapOf<String, Double>()
         var totalWeight = 0.0
 
-        val strategies = listOf(
-            SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod) to 0.05,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 5) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 13) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 6) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 7) to 0.5,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 8) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 9) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 10) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 11) to 0.2,
-            SmaCrossoverStrategy(shortPeriod = 4, longPeriod = 12) to 0.2,
-        )
+
+        val strategies = config.emaConfig.map {
+            SmaCrossoverStrategy(shortPeriod = config.shortestPeriod, it.period) to it.weight
+        }
 
         val predictorConfig = EngineConfig(
             strategies = strategies,
@@ -42,13 +34,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             biasThreshold = config.threshold
         )
 
-
-        val kline = candles.getKline(
-            baseUrl = "https://api.bybit.com/v5/market/kline",
-            symbol = config.symbol,
-            interval = config.interval,
-            limit = 100
-        ).dropLast(1).takeLast(1).first()
 
         for ((interval, weigh) in intervalWeigh) {
             try {
@@ -58,8 +43,16 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     interval = config.interval,
                     limit = 1000
                 )
+                val kline = klines.takeLast(1).first()
                 val engine = PredictionEngine(predictorConfig)
                 val prediction = engine.predict(klines)
+
+                val upConfirmed = kline.open == kline.low
+                val downConfirmed = kline.open == kline.high
+
+                if (upConfirmed) confirmations.add(0)
+                if (downConfirmed) confirmations.add(1)
+
                 when(prediction) {
                     is Prediction.Buy -> {
                         intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
@@ -120,18 +113,27 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val smoothed = positions.count { it == actualDir } > config.interval.toInt() * config.patience
 
-        val upConfirmed = kline.open == kline.low
-        val downConfirmed = kline.open == kline.high
+        val confirmUp = confirmations.count { it == 0 } > config.interval.toInt() * config.patience
+        val confirmDown = confirmations.count { it == 1 } > config.interval.toInt() * config.patience
 
         val smoothedDirConfirmed = if (smoothed) actualDir else 2
 
         val smoothedDir = when {
 
-            smoothedDirConfirmed == 0 && downConfirmed -> 2
+            smoothedDirConfirmed == 0 && confirmDown -> {
+                confirmations.clear()
+                2
+            }
 
-            smoothedDirConfirmed == 1 && upConfirmed -> 2
+            smoothedDirConfirmed == 1 && confirmUp -> {
+                confirmations.clear()
+                2
+            }
 
-            smoothedDirConfirmed == 2 -> 2
+            smoothedDirConfirmed == 2 -> {
+                confirmations.clear()
+                2
+            }
 
             else -> smoothedDirConfirmed
         }

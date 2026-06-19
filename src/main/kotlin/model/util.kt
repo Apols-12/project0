@@ -67,11 +67,22 @@ data class BotConfig(
     val slPercent: Double,
     val apiKey: String,
     val secretKey: String,
-    val longPeriod: Int,
     val interval: String,
     val patience: Int,
     val intervalConfig: IntervalConfig,
-    val shortPeriod: Int,
+    val emaConfig: List<EmaConfig> = listOf(
+        EmaConfig(5, 0.2),
+        EmaConfig(6, 0.2),
+        EmaConfig(7, 0.2),
+        EmaConfig(8, 0.2),
+        EmaConfig(9, 0.3),
+        EmaConfig(10, 0.3),
+        EmaConfig(11, 0.3),
+        EmaConfig(12, 0.4),
+        EmaConfig(13, 0.4),
+        EmaConfig(14, 0.4)
+    ),
+    val shortestPeriod: Int,
     val threshold: Double,
     val overTrade: Boolean,
     val demo: Boolean
@@ -86,6 +97,11 @@ data class IntervalConfig(
     val config240m: Double = 0.3
 )
 
+@Serializable
+data class EmaConfig(
+    val period: Int,
+    val weight: Double
+)
 data class TKlines(
     val close: Double,
     val change: Double,

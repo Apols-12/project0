@@ -21,6 +21,7 @@ class BotManager(private val service: BotService) {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     val position =  mutableMapOf<String, Int?>()
     val predictions = mutableMapOf<String, MutableList<Int>>()
+    val dirConfirmations = mutableMapOf<String, MutableList<Int>>()
     val mutex = Mutex()
     private val logger = KotlinLogging.logger("bot_manager_logs")
     val botStatus get() =  activeBots.mapValues {
@@ -31,11 +32,12 @@ class BotManager(private val service: BotService) {
         mutex.withLock {
             stopBot(config.botName)
             predictions[config.botName] = mutableListOf()
+            dirConfirmations[config.botName] = mutableListOf()
             activeBots[config.botName] = scope.launch {
                 while (isActive) {
                     try {
                         val currentPosition = position[config.botName]
-                        val newPosition = service.start(config, currentPosition, predictions[config.botName]!!)
+                        val newPosition = service.start(config, currentPosition, predictions[config.botName]!!, dirConfirmations[config.botName]!!)
                         predictions[config.botName]?.add(newPosition)
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
@@ -59,6 +61,9 @@ class BotManager(private val service: BotService) {
             it.cancel("User Requested Stop")
             position.remove(userId)
             predictions[userId]?.clear()
+            predictions.remove(userId)
+            dirConfirmations[userId]?.clear()
+            dirConfirmations.remove(userId)
             activeBots.remove(userId)
             logger.info("Bot stop successfully")
             // We can also notify the user after that
