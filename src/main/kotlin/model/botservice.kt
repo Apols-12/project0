@@ -111,10 +111,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         if(positions.contains(2)) positions.clear()
 
-        val smoothed = positions.count { it == actualDir } > config.interval.toInt() * config.patience
-
-        val confirmUp = confirmations.count { it == 0 } > config.interval.toInt() * config.patience
-        val confirmDown = confirmations.count { it == 1 } > config.interval.toInt() * config.patience
+        val smoothed = positions.count { it == actualDir } > config.interval.toInt()* 60 * config.patience
+        if(positions.size > config.interval.toInt()* 60 + 10) positions.drop(8)
+        val confirmUp = confirmations.count { it == 0 } > config.interval.toInt()* 60 * config.patience
+        val confirmDown = confirmations.count { it == 1 } > config.interval.toInt()* 60 * config.patience
 
         val smoothedDirConfirmed = if (smoothed) actualDir else 2
 
