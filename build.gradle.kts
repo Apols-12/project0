@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -60,8 +62,6 @@ tasks {
     }
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
+kotlin {
+    jvmToolChain(17)
 }
