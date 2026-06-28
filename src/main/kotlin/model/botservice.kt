@@ -40,7 +40,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 val klines = candles.getKline(
                     baseUrl = "https://api.bybit.com/v5/market/kline",
                     symbol = config.symbol,
-                    interval = config.interval,
+                    interval = interval,
                     limit = 1000
                 )
                 val kline = klines.takeLast(1).first()
@@ -111,30 +111,26 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         if(positions.contains(2)) positions.clear()
 
-        val smoothed = positions.count { it == actualDir } > config.interval.toInt()* 60 * config.patience
-        if(positions.size > config.interval.toInt()* 60 * config.patience + 10) positions.drop(8)
-        val confirmUp = confirmations.count { it == 0 } > config.interval.toInt()* 60 * config.patience
-        val confirmDown = confirmations.count { it == 1 } > config.interval.toInt()* 60 * config.patience
+        val smoothed = positions.count { it == actualDir } > 60 * config.patience
+        if(positions.size > 60 * config.patience + 10) positions.drop(8)
+        val confirmUp = confirmations.count { it == 0 } > 60 * config.patience
+        val confirmDown = confirmations.count { it == 1 } > 60 * config.patience
 
         val smoothedDirConfirmed = if (smoothed) actualDir else 2
 
         val smoothedDir = when {
-
             smoothedDirConfirmed == 0 && confirmDown -> {
                 confirmations.clear()
                 2
             }
-
             smoothedDirConfirmed == 1 && confirmUp -> {
                 confirmations.clear()
                 2
             }
-
             smoothedDirConfirmed == 2 -> {
                 confirmations.clear()
                 2
             }
-
             else -> smoothedDirConfirmed
         }
 
@@ -172,7 +168,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 return actualDir
             }
 
-            positions.size > config.interval.toInt() * 60 * config.patience   && !hasOpenPosition -> {
+            positions.size > 60 * config.patience   && !hasOpenPosition -> {
                 logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 return actualDir
             }

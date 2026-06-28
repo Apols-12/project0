@@ -155,7 +155,6 @@ fun main() {
                                         qty = "10",
                                         apiKey = "TZEk4Xr0lDoZunZPg6",
                                         secretKey = "qiAJjxhWsoqDJ3pGWn9rZ1pbtVJ8cywadXlW",
-                                        interval = "60",
                                         patience = 2,
                                         intervalConfig = IntervalConfig(),
                                         shortestPeriod = 4,

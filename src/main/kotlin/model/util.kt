@@ -67,7 +67,6 @@ data class BotConfig(
     val slPercent: Double,
     val apiKey: String,
     val secretKey: String,
-    val interval: String,
     val patience: Int,
     val intervalConfig: IntervalConfig,
     val emaConfig: List<EmaConfig> = listOf(
