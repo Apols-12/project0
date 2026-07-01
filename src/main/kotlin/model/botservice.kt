@@ -10,11 +10,10 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         val intervalConfig = config.intervalConfig
 
         val intervalWeigh = mutableMapOf(
+            "5" to intervalConfig.config5m,
             "15" to intervalConfig.config15m,
             "30" to intervalConfig.config30m,
-            "60" to intervalConfig.config60m,
-            "120" to intervalConfig.config120m,
-            "240" to intervalConfig.config240m
+            "60" to intervalConfig.config60m
         )
 
         val signals = mutableMapOf<Class<out Prediction>, Double>()
@@ -47,11 +46,11 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 val engine = PredictionEngine(predictorConfig)
                 val prediction = engine.predict(klines)
 
-/*                val upConfirmed = kline.open == kline.low
+                val upConfirmed = kline.open == kline.low
                 val downConfirmed = kline.open == kline.high
 
                 if (upConfirmed) confirmations.add(0)
-                if (downConfirmed) confirmations.add(1)*/
+                if (downConfirmed) confirmations.add(1)
 
                 when(prediction) {
                     is Prediction.Buy -> {
@@ -112,13 +111,12 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         if(positions.contains(2)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > 60 * config.patience
-        if(positions.size > 60 * config.patience + 10) positions.drop(8)
-        /*val confirmUp = confirmations.count { it == 0 } > 60 * config.patience
-        val confirmDown = confirmations.count { it == 1 } > 60 * config.patience*/
+        val confirmUp = confirmations.count { it == 0 } > 60 * config.patience
+        val confirmDown = confirmations.count { it == 1 } > 60 * config.patience
+        if (positions.size > 60 * config.patience) confirmations.clear()
+        val smoothedDirConfirmed = if (smoothed) actualDir else 2
 
-        val smoothedDir = if (smoothed) actualDir else 2
-
-        /*val smoothedDir = when {
+        val smoothedDir = when {
             smoothedDirConfirmed == 0 && confirmDown -> {
                 confirmations.clear()
                 2
@@ -132,7 +130,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                 2
             }
             else -> smoothedDirConfirmed
-        }*/
+        }
 
         val dir = direction[smoothedDir].toString()
 
