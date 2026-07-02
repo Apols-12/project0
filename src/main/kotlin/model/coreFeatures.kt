@@ -16,18 +16,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
-import org.jetbrains.kotlinx.dl.api.inference.TensorFlowInferenceModel
-import java.io.File
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.time.Duration.Companion.seconds
-import kotlin.use
 
 private val RECV_WINDOW = "5000"
 // Base URL - use testnet for testing
@@ -51,22 +47,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         val result: Result
     )
 
-    @Serializable
-    data class CancelOrder(
-        val category: String,
-        val symbol: String
-    )
 
-    @Serializable
-    data class CanceledOrder(
-        val orderId: String?,
-        val orderLinkId: String?
-    )
-    @Serializable
-    data class CancelOrderResponse(
-        val list: List<CanceledOrder>,
-        val success: String?
-    )
     @Serializable
     data class Result(
         val category: String,
@@ -124,14 +105,6 @@ class CoreFeature(private val httpClient: HttpClient) {
         val slTriggerBy: String? = null
     )
 
-    @Serializable
-    data class BybitOrderResponse(
-        val retCode: Int,
-        val retMsg: String,
-        val result: OrderResult? = null,
-        val retExtInfo: Map<String, String> = emptyMap(),
-        val time: Long = 0
-    )
 
     @Serializable
     data class OrderResult(

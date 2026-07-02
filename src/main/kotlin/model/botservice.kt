@@ -109,6 +109,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         }
 
         if(positions.contains(2)) positions.clear()
+        if (positions.contains(0) && positions.contains(1)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > 60 * config.patience
         val confirmUp = confirmations.count { it == 0 } > 60 * config.patience
