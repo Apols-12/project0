@@ -6,7 +6,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>, confirmations: MutableList<Int>): Int {
+    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
         val intervalConfig = config.intervalConfig
 
         val intervalWeigh = mutableMapOf(
@@ -33,7 +33,6 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             biasThreshold = config.threshold
         )
 
-
         for ((interval, weigh) in intervalWeigh) {
             try {
                 val klines = candles.getKline(
@@ -42,15 +41,9 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
                     interval = interval,
                     limit = 1000
                 )
-                val kline = klines.takeLast(1).first()
+
                 val engine = PredictionEngine(predictorConfig)
                 val prediction = engine.predict(klines)
-
-                val upConfirmed = kline.open == kline.low
-                val downConfirmed = kline.open == kline.high
-
-                if (upConfirmed) confirmations.add(0)
-                if (downConfirmed) confirmations.add(1)
 
                 when(prediction) {
                     is Prediction.Buy -> {
@@ -112,26 +105,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > 60 * config.patience
-        val confirmUp = confirmations.count { it == 0 } > 60 * config.patience
-        val confirmDown = confirmations.count { it == 1 } > 60 * config.patience
-        if (positions.size > 60 * config.patience) confirmations.clear()
-        val smoothedDirConfirmed = if (smoothed) actualDir else 2
-
-        val smoothedDir = when {
-            smoothedDirConfirmed == 0 && confirmDown -> {
-                confirmations.clear()
-                2
-            }
-            smoothedDirConfirmed == 1 && confirmUp -> {
-                confirmations.clear()
-                2
-            }
-            smoothedDirConfirmed == 2 -> {
-                confirmations.clear()
-                2
-            }
-            else -> smoothedDirConfirmed
-        }
+        val smoothedDir = if (smoothed) actualDir else 2
 
         val dir = direction[smoothedDir].toString()
 

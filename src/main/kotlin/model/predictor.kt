@@ -31,6 +31,31 @@ fun List<Kline>.ema(period: Int): Double {
 }
 
 /**
+ * Relative Strength Index (14‑period by default).
+ * Returns null if data insufficient.
+ */
+fun List<Kline>.rsi(period: Int = 14): Double? {
+    if (size < period + 1) return null
+    val gains = mutableListOf<Double>()
+    val losses = mutableListOf<Double>()
+    for (i in size - period until size) {
+        val change = this[i].close - this[i - 1].close
+        if (change >= 0) {
+            gains.add(change)
+            losses.add(0.0)
+        } else {
+            gains.add(0.0)
+            losses.add(-change)
+        }
+    }
+    val avgGain = gains.average()
+    val avgLoss = losses.average()
+    if (avgLoss == 0.0) return 100.0
+    val rs = avgGain / avgLoss
+    return 100.0 - (100.0 / (1.0 + rs))
+}
+
+/**
  * MACD line, signal line and histogram.
  * Returns null when data is insufficient.
  */
@@ -90,9 +115,10 @@ class SmaCrossoverStrategy(
     override fun predict(klines: List<Kline>): Prediction {
         val shortSma = klines.ema(shortPeriod)
         val longSma = klines.ema(longPeriod)
+        val rsi = klines.rsi() ?: 40.0
         return when {
-            shortSma > longSma -> Prediction.Buy(0.7)
-            shortSma < longSma -> Prediction.Sell(0.7)
+            shortSma > longSma && rsi > 50 -> Prediction.Buy(0.7)
+            shortSma < longSma && rsi < 50 -> Prediction.Sell(0.7)
             else -> Prediction.Neutral
         }
     }
@@ -101,7 +127,7 @@ class SmaCrossoverStrategy(
 /**
  * MACD crossover: signal line crossover.
  */
-class MacdCrossoverStrategy(
+/*class MacdCrossoverStrategy(
     private val fast: Int = 12,
     private val slow: Int = 26,
     private val signal: Int = 9
@@ -119,7 +145,7 @@ class MacdCrossoverStrategy(
             else -> Prediction.Neutral
         }
     }
-}
+}*/
 
 
 /**
