@@ -67,18 +67,9 @@ data class BotConfig(
     val slPercent: Double,
     val apiKey: String,
     val secretKey: String,
-    val patience: Int,
+    val patienceTime: Int,
     val intervalConfig: IntervalConfig,
     val emaConfig: List<EmaConfig> = listOf(
-        EmaConfig(5, 0.2),
-        EmaConfig(6, 0.2),
-        EmaConfig(7, 0.2),
-        EmaConfig(8, 0.2),
-        EmaConfig(9, 0.3),
-        EmaConfig(10, 0.3),
-        EmaConfig(11, 0.3),
-        EmaConfig(12, 0.4),
-        EmaConfig(13, 0.4),
         EmaConfig(14, 0.4)
     ),
     val shortestPeriod: Int,
@@ -89,10 +80,9 @@ data class BotConfig(
 
 @Serializable
 data class IntervalConfig(
-    val config5m: Double = 0.3,
+    val config5m: Double = 0.2,
     val config15m : Double = 0.3,
-    val config30m: Double = 0.3,
-    val config60m: Double = 0.4,
+    val config30m: Double = 0.3
 )
 
 @Serializable
