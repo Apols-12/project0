@@ -196,10 +196,10 @@ class PredictionEngine(private val config: EngineConfig) {
             }
         }
 
-        if (totalWeight == 0.0 || signals.isEmpty()) {
+        /*if (totalWeight == 0.0 || signals.isEmpty()) {
             logger.info("No valid signals generated, returning Neutral")
             return Prediction.Neutral
-        }
+        }*/
 
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
