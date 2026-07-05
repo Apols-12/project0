@@ -196,26 +196,19 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             }
         }
 
-        if (totalWeight == 0.0 || signals.isEmpty()) {
-            logger.info("No valid signals generated, returning Neutral")
-            return Prediction.Neutral
-        }
 
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
         val totalSignals = buyScore + sellScore
         logger.info("[total signals: $totalSignals]")
 
-        val buyRatio = buyScore / totalWeight
-        val sellRatio = sellScore / totalWeight
-
-        logger.info("[Buy ratio: $buyRatio, Sell ratio: $sellRatio]")
+        logger.info("[Buy ratio: $buyScore, Sell ratio: $sellScore]")
 
         return when {
-            buyRatio >= engineConfig.biasThreshold && buyRatio > sellRatio ->
-                Prediction.Buy(buyRatio)
-            sellRatio >= engineConfig.biasThreshold && sellRatio > buyRatio ->
-                Prediction.Sell(sellRatio)
+            buyScore >= engineConfig.biasThreshold && buyScore > sellScore ->
+                Prediction.Buy(buyScore)
+            sellScore >= engineConfig.biasThreshold && sellScore > buyScore ->
+                Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }
     }
