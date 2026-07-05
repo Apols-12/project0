@@ -224,8 +224,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val intervalWeigh = mutableMapOf(
             "5" to config.intervalConfig.config5m,
             "15" to config.intervalConfig.config15m,
-            "30" to config.intervalConfig.config30m,
-            "60" to config.intervalConfig.config60m
+            "30" to config.intervalConfig.config30m
         )
 
         val signals = mutableMapOf<Class<out Prediction>, Double>()
