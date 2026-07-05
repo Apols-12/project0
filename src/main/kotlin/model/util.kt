@@ -73,7 +73,11 @@ data class BotConfig(
         EmaConfig(6, 0.2),
         EmaConfig(7, 0.2),
         EmaConfig(9, 0.2),
-        EmaConfig(11, 0.2)
+        EmaConfig(10, 0.2),
+        EmaConfig(11, 0.2),
+        EmaConfig(12, 0.2),
+        EmaConfig(13, 0.2),
+        EmaConfig(14, 0.2)
     ),
     val shortestPeriod: Int,
     val threshold: Double,
@@ -85,8 +89,7 @@ data class BotConfig(
 data class IntervalConfig(
     val config5m: Double = 0.3,
     val config15m : Double = 0.3,
-    val config30m: Double = 0.3,
-    val config60m: Double = 0.3
+    val config30m: Double = 0.3
 )
 
 @Serializable
