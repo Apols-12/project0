@@ -32,6 +32,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
+        val clear = positions.count { it == actualDir } > 10
+        if (clear) positions.clear()
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > 6 * config.patienceTime
@@ -39,7 +41,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val dir = direction[smoothedDir].toString()
 
-        logger.info("The Model prediction for user ${config.botName} is: $dir for the moment")
+        logger.info("The smoothed Model prediction for user ${config.botName} is: $dir and the actual is ${direction.get(actualDir)}")
 
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
