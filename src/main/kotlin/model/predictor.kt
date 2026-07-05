@@ -157,15 +157,15 @@ data class EngineConfig(
     val biasThreshold: Double = 0.6 // ratio to flip to Buy/Sell
 )
 
-class PredictionEngine(private val config: EngineConfig) {
-    private val logger = KotlinLogging.logger {}
+class PredictionEngine(private val engineConfig: EngineConfig) {
+    private val logger = KotlinLogging.logger("predictor")
 
     /**
      * Process a time-sorted list of Klines and return the aggregated prediction.
      * Always returns a valid Prediction, never throws.
      */
-    fun predict(klines: List<Kline>): Prediction {
-        logger.debug { "Processing ${klines.size} klines" }
+    private fun predict(klines: List<Kline>): Prediction {
+        logger.debug ("Processing ${klines.size} klines")
         if (klines.isEmpty()) {
             logger.warn("Empty kline list received, returning Neutral")
             return Prediction.Neutral
@@ -174,7 +174,7 @@ class PredictionEngine(private val config: EngineConfig) {
         val signals = mutableMapOf<Class<out Prediction>, Double>()
         var totalWeight = 0.0
 
-        for ((strategy, weight) in config.strategies) {
+        for ((strategy, weight) in engineConfig.strategies) {
             try {
                 val prediction = strategy.predict(klines)
                 when (prediction) {
@@ -190,31 +190,99 @@ class PredictionEngine(private val config: EngineConfig) {
                     }
                     Prediction.Neutral -> { /* no weight */ }
                 }
-                logger.trace { "Strategy ${strategy::class.simpleName}: $prediction" }
+                logger.trace("Strategy {}: prediction {}", strategy::class.simpleName, prediction)
             } catch (e: Exception) {
                 logger.error(e) { "Strategy ${strategy::class.simpleName} failed, skipping" }
             }
         }
 
-        /*if (totalWeight == 0.0 || signals.isEmpty()) {
+        if (totalWeight == 0.0 || signals.isEmpty()) {
             logger.info("No valid signals generated, returning Neutral")
             return Prediction.Neutral
-        }*/
+        }
 
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
         val totalSignals = buyScore + sellScore
-        logger.info("_____________________________total signals: $totalSignals")
+        logger.info("[total signals: $totalSignals]")
 
         val buyRatio = buyScore / totalWeight
         val sellRatio = sellScore / totalWeight
 
-        logger.info("Buy ratio: $buyRatio, Sell ratio: $sellRatio")
+        logger.info("[Buy ratio: $buyRatio, Sell ratio: $sellRatio]")
 
         return when {
-            buyRatio >= config.biasThreshold && buyRatio > sellRatio ->
+            buyRatio >= engineConfig.biasThreshold && buyRatio > sellRatio ->
                 Prediction.Buy(buyRatio)
-            sellRatio >= config.biasThreshold && sellRatio > buyRatio ->
+            sellRatio >= engineConfig.biasThreshold && sellRatio > buyRatio ->
+                Prediction.Sell(sellRatio)
+            else -> Prediction.Neutral
+        }
+    }
+
+    suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
+        val intervalWeigh = mutableMapOf(
+            "5" to config.intervalConfig.config5m,
+            "15" to config.intervalConfig.config15m,
+            "30" to config.intervalConfig.config30m
+        )
+
+        val signals = mutableMapOf<Class<out Prediction>, Double>()
+
+        val intervalSignals = mutableMapOf<String, Double>()
+        var totalWeight = 0.0
+
+        for ((interval, weigh) in intervalWeigh) {
+            try {
+                val klines = networkService.getKline(
+                    baseUrl = "https://api.bybit.com/v5/market/kline",
+                    symbol = config.symbol,
+                    interval = interval,
+                    limit = 1000
+                )
+
+                val prediction = predict(klines)
+
+                when(prediction) {
+                    is Prediction.Buy -> {
+                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
+                        signals[Prediction.Buy::class.java] =
+                            (signals[Prediction.Buy::class.java] ?: 0.0) + weigh * prediction.confidence
+                        totalWeight += weigh
+                    }
+
+                    is Prediction.Sell -> {
+                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) + weigh * prediction.confidence
+                        signals[Prediction.Sell::class.java] =
+                            (signals[Prediction.Sell::class.java] ?: 0.0) + weigh * prediction.confidence
+                        totalWeight += weigh
+                    }
+
+                    is Prediction.Neutral -> { }
+                }
+                logger.info("[Interval $interval*******************prediction $prediction]")
+            } catch (e: Exception) {
+                logger.info("[Failed for interval $interval********************with exception: ${e.message}]")
+            }
+        }
+
+        if (totalWeight == 0.0 || intervalSignals.isEmpty()) {
+            logger.info("[No valid signals generated, returning Neutral for now]")
+            return Prediction.Neutral
+        }
+
+        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
+        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
+
+        val buyRatio = buyScore / totalWeight
+        val sellRatio = sellScore / totalWeight
+
+        logger.info( "[Buy ratio: $buyRatio*************Sell ratio: $sellRatio from the bot]" )
+
+        return when {
+            buyRatio >= engineConfig.biasThreshold && buyRatio > sellRatio ->
+                Prediction.Buy(buyRatio)
+            sellRatio >= engineConfig.biasThreshold && sellRatio > buyRatio ->
                 Prediction.Sell(sellRatio)
             else -> Prediction.Neutral
         }

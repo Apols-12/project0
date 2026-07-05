@@ -14,7 +14,6 @@ import mu.KotlinLogging
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class BotManager(private val service: BotService) {
@@ -36,7 +35,7 @@ class BotManager(private val service: BotService) {
                 while (isActive) {
                     try {
                         val currentPosition = position[config.botName]
-                        val newPosition = service.start(config, currentPosition, predictions[config.botName]!!)
+                        val newPosition = service.start(config, predictions[config.botName]!!)
                         predictions[config.botName]?.add(newPosition)
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition

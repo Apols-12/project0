@@ -2,25 +2,11 @@ package com.apols.model
 
 import mu.KotlinLogging
 
-class BotService(private val candles: NetworkService, private val coreFeature: CoreFeature) {
+class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentPosition: Int?, positions: MutableList<Int>): Int {
-        val intervalConfig = config.intervalConfig
-
-        val intervalWeigh = mutableMapOf(
-            "5" to intervalConfig.config5m,
-            "15" to intervalConfig.config15m,
-            "30" to intervalConfig.config30m
-        )
-
-        val signals = mutableMapOf<Class<out Prediction>, Double>()
-
-        var prediction: Prediction
-        val intervalSignals = mutableMapOf<String, Double>()
-        var totalWeight = 0.0
-
+    suspend fun start(config: BotConfig, positions: MutableList<Int>): Int {
 
         val strategies = config.emaConfig.map {
             SmaCrossoverStrategy(shortPeriod = config.shortestPeriod, it.period) to it.weight
@@ -32,61 +18,8 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
             biasThreshold = config.threshold
         )
 
-        for ((interval, weigh) in intervalWeigh) {
-            try {
-                val klines = candles.getKline(
-                    baseUrl = "https://api.bybit.com/v5/market/kline",
-                    symbol = config.symbol,
-                    interval = interval,
-                    limit = 1000
-                )
-
-                val engine = PredictionEngine(predictorConfig)
-                val prediction = engine.predict(klines)
-
-                when(prediction) {
-                    is Prediction.Buy -> {
-                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
-                        signals[Prediction.Buy::class.java] =
-                            (signals[Prediction.Buy::class.java] ?: 0.0) + weigh * prediction.confidence
-                        totalWeight += weigh
-                    }
-
-                    is Prediction.Sell -> {
-                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) + weigh * prediction.confidence
-                        signals[Prediction.Sell::class.java] =
-                            (signals[Prediction.Sell::class.java] ?: 0.0) + weigh * prediction.confidence
-                        totalWeight += weigh
-                    }
-
-                    is Prediction.Neutral -> { }
-                }
-                logger.info("Interval $interval __________________prediction $prediction")
-            } catch (e: Exception) {
-                logger.info("Failed for interval $interval _______________________with exception: ${e.message}")
-            }
-        }
-
-        if (totalWeight == 0.0 || intervalSignals.isEmpty()) {
-            prediction = Prediction.Neutral
-            logger.info("No valid signals generated, returning Neutral for now: $prediction")
-        }
-
-        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
-        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
-
-        val buyRatio = buyScore / totalWeight
-        val sellRatio = sellScore / totalWeight
-
-        logger.info( "Buy ratio: $buyRatio, Sell ratio: $sellRatio from the bot" )
-
-        prediction = when {
-            buyRatio >= predictorConfig.biasThreshold && buyRatio > sellRatio ->
-                Prediction.Buy(buyRatio)
-            sellRatio >= predictorConfig.biasThreshold && sellRatio > buyRatio ->
-                Prediction.Sell(sellRatio)
-            else -> Prediction.Neutral
-        }
+        val engine = PredictionEngine(predictorConfig)
+        val prediction = engine.prediction(config, networkService)
 
         val direction = mapOf(
             0 to "Buy",
@@ -108,7 +41,7 @@ class BotService(private val candles: NetworkService, private val coreFeature: C
 
         val dir = direction[smoothedDir].toString()
 
-        logger.info("The Model prediction for user ${config.botName} is: $dir and it current position is: $currentPosition")
+        logger.info("The Model prediction for user ${config.botName} is: $dir for the moment")
 
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
