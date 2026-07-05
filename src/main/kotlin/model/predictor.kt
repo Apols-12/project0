@@ -85,10 +85,6 @@ fun List<Kline>.macd(
         macdHistory.add(fast - slow)
     }
     if (macdHistory.size < signalPeriod) return null
-    val signalLine = macdHistory.takeLast(signalPeriod).average() // simplified signal (SMA of MACD)
-    // More accurate: compute EMA of macdHistory
-    // For a real production implementation, compute with EMA formula.
-    // We'll stick with a cleaner approach below.
 
     // Real EMA-based signal line:
     val alpha = 2.0 / (signalPeriod + 1)
@@ -153,8 +149,7 @@ class SmaCrossoverStrategy(
  */
 data class EngineConfig(
     val strategies: List<Pair<PredictionStrategy, Double>>, // strategy to weight
-    val minRequiredSignals: Int = 2,
-    val biasThreshold: Double = 0.6 // ratio to flip to Buy/Sell
+    val minRequiredSignals: Int = 2
 )
 
 class PredictionEngine(private val engineConfig: EngineConfig) {
@@ -172,7 +167,6 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         }
 
         val signals = mutableMapOf<Class<out Prediction>, Double>()
-        var totalWeight = 0.0
 
         for ((strategy, weight) in engineConfig.strategies) {
             try {
@@ -181,12 +175,10 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
                     is Prediction.Buy -> {
                         signals[Prediction.Buy::class.java] =
                             (signals[Prediction.Buy::class.java] ?: 0.0) + weight * prediction.confidence
-                        totalWeight += weight
                     }
                     is Prediction.Sell -> {
                         signals[Prediction.Sell::class.java] =
                             (signals[Prediction.Sell::class.java] ?: 0.0) + weight * prediction.confidence
-                        totalWeight += weight
                     }
                     Prediction.Neutral -> { /* no weight */ }
                 }
@@ -202,12 +194,12 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val totalSignals = buyScore + sellScore
         logger.info("[total signals: $totalSignals]")
 
-        logger.info("[Buy ratio: $buyScore, Sell ratio: $sellScore]")
+        logger.info("[Buy Score: $buyScore, Sell score: $sellScore]")
 
         return when {
-            buyScore >= engineConfig.biasThreshold && buyScore > sellScore ->
+            buyScore > sellScore ->
                 Prediction.Buy(buyScore)
-            sellScore >= engineConfig.biasThreshold && sellScore > buyScore ->
+            sellScore > buyScore ->
                 Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }
@@ -215,7 +207,6 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
         val intervalWeigh = mutableMapOf(
-            "5" to config.intervalConfig.config5m,
             "15" to config.intervalConfig.config15m,
             "30" to config.intervalConfig.config30m
         )
@@ -223,7 +214,6 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val signals = mutableMapOf<Class<out Prediction>, Double>()
 
         val intervalSignals = mutableMapOf<String, Double>()
-        var totalWeight = 0.0
 
         for ((interval, weigh) in intervalWeigh) {
             try {
@@ -241,14 +231,12 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
                         intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
                         signals[Prediction.Buy::class.java] =
                             (signals[Prediction.Buy::class.java] ?: 0.0) + weigh * prediction.confidence
-                        totalWeight += weigh
                     }
 
                     is Prediction.Sell -> {
                         intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) + weigh * prediction.confidence
                         signals[Prediction.Sell::class.java] =
                             (signals[Prediction.Sell::class.java] ?: 0.0) + weigh * prediction.confidence
-                        totalWeight += weigh
                     }
 
                     is Prediction.Neutral -> { }
@@ -259,24 +247,17 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             }
         }
 
-        if (totalWeight == 0.0 || intervalSignals.isEmpty()) {
-            logger.info("[No valid signals generated, returning Neutral for now]")
-            return Prediction.Neutral
-        }
-
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
 
-        val buyRatio = buyScore / totalWeight
-        val sellRatio = sellScore / totalWeight
 
-        logger.info( "[Buy ratio: $buyRatio*************Sell ratio: $sellRatio from the bot]" )
+        logger.info( "[Buy score: $buyScore*************Sell score: $sellScore from the bot]" )
 
         return when {
-            buyRatio >= engineConfig.biasThreshold && buyRatio > sellRatio ->
-                Prediction.Buy(buyRatio)
-            sellRatio >= engineConfig.biasThreshold && sellRatio > buyRatio ->
-                Prediction.Sell(sellRatio)
+            buyScore > sellScore->
+                Prediction.Buy(buyScore)
+            sellScore > buyScore ->
+                Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }
     }

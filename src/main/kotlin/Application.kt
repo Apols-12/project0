@@ -158,7 +158,6 @@ fun main() {
                                         patienceTime = 10,
                                         intervalConfig = IntervalConfig(),
                                         shortestPeriod = 5,
-                                        threshold = 0.5,
                                         overTrade = false,
                                         demo = true
                                     )

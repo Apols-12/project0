@@ -14,8 +14,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictorConfig = EngineConfig(
             strategies = strategies,
-            minRequiredSignals = 1,
-            biasThreshold = config.threshold
+            minRequiredSignals = 1
         )
 
         val engine = PredictionEngine(predictorConfig)
@@ -33,8 +32,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
-        val clear = positions.count { it == 2 } > 6
-        if(clear) positions.clear()
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > 6 * config.patienceTime

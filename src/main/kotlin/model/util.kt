@@ -80,14 +80,12 @@ data class BotConfig(
         EmaConfig(14, 0.2)
     ),
     val shortestPeriod: Int,
-    val threshold: Double,
     val overTrade: Boolean,
     val demo: Boolean
 )
 
 @Serializable
 data class IntervalConfig(
-    val config5m: Double = 0.3,
     val config15m : Double = 0.3,
     val config30m: Double = 0.3
 )
