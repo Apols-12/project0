@@ -115,7 +115,7 @@ class SmaCrossoverStrategy(
     override fun predict(klines: List<Kline>): Prediction {
         val shortSma = klines.ema(shortPeriod)
         val longSma = klines.ema(longPeriod)
-        val rsi = klines.rsi() ?: 40.0
+        val rsi = klines.rsi() ?: 50.0
         return when {
             shortSma > longSma && rsi > 50 -> Prediction.Buy(0.7)
             shortSma < longSma && rsi < 50 -> Prediction.Sell(0.7)
@@ -224,7 +224,8 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val intervalWeigh = mutableMapOf(
             "5" to config.intervalConfig.config5m,
             "15" to config.intervalConfig.config15m,
-            "30" to config.intervalConfig.config30m
+            "30" to config.intervalConfig.config30m,
+            "60" to config.intervalConfig.config60m
         )
 
         val signals = mutableMapOf<Class<out Prediction>, Double>()

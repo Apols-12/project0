@@ -83,9 +83,10 @@ data class BotConfig(
 
 @Serializable
 data class IntervalConfig(
-    val config5m: Double = 0.2,
+    val config5m: Double = 0.3,
     val config15m : Double = 0.3,
-    val config30m: Double = 0.3
+    val config30m: Double = 0.3,
+    val config60m: Double = 0.3
 )
 
 @Serializable
