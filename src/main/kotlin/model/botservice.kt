@@ -33,7 +33,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
-        val clear = positions.count { it == actualDir } > 10
+        val clear = positions.count { it == 2 } > 10
         if (clear) positions.clear()
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
