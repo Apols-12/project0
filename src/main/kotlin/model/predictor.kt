@@ -1,8 +1,6 @@
 package com.apols.model
 
 import mu.KotlinLogging
-import kotlin.math.abs
-import kotlin.math.max
 
 /**
  * Sealed interface representing a prediction signal.
@@ -193,9 +191,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
         val totalSignals = buyScore + sellScore
-        logger.info("[total signals: $totalSignals]")
+        logger.info("[total ema signals: $totalSignals]")
 
-        logger.info("[Buy Score: $buyScore, Sell score: $sellScore]")
+        logger.info("[ema Buy Score: $buyScore, ema Sell score: $sellScore]")
 
         return when {
             buyScore > engineConfig.threshold && buyScore > sellScore ->
@@ -213,7 +211,6 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         )
 
         val signals = mutableMapOf<Class<out Prediction>, Double>()
-
         val intervalSignals = mutableMapOf<String, Double>()
 
         for ((interval, weigh) in intervalWeigh) {
@@ -251,8 +248,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
 
+        if (signals.containsKey(Prediction.Neutral::class.java)) return Prediction.Neutral
 
-        logger.info( "[Buy score: $buyScore*************Sell score: $sellScore from the bot]" )
+        logger.info( "[interval Buy score: $buyScore*************interval Sell score: $sellScore from the bot]" )
 
         return when {
             buyScore > config.threshold && buyScore > sellScore->
