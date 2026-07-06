@@ -14,7 +14,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictorConfig = EngineConfig(
             strategies = strategies,
-            minRequiredSignals = 1
+            minRequiredSignals = 1,
+            threshold = config.threshold
         )
 
         val engine = PredictionEngine(predictorConfig)

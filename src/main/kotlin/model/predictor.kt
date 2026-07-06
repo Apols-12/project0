@@ -149,7 +149,8 @@ class SmaCrossoverStrategy(
  */
 data class EngineConfig(
     val strategies: List<Pair<PredictionStrategy, Double>>, // strategy to weight
-    val minRequiredSignals: Int = 2
+    val minRequiredSignals: Int = 2,
+    val threshold: Double = 0.5
 )
 
 class PredictionEngine(private val engineConfig: EngineConfig) {
@@ -197,9 +198,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         logger.info("[Buy Score: $buyScore, Sell score: $sellScore]")
 
         return when {
-            buyScore > sellScore ->
+            buyScore > engineConfig.threshold && buyScore > sellScore ->
                 Prediction.Buy(buyScore)
-            sellScore > buyScore ->
+            sellScore > engineConfig.threshold && sellScore > buyScore ->
                 Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }
@@ -254,9 +255,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         logger.info( "[Buy score: $buyScore*************Sell score: $sellScore from the bot]" )
 
         return when {
-            buyScore > sellScore->
+            buyScore > config.threshold && buyScore > sellScore->
                 Prediction.Buy(buyScore)
-            sellScore > buyScore ->
+            sellScore > config.threshold && sellScore > buyScore ->
                 Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }

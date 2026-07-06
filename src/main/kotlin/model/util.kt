@@ -68,6 +68,7 @@ data class BotConfig(
     val apiKey: String,
     val secretKey: String,
     val patienceTime: Int,
+    val threshold: Double = 0.5,
     val intervalConfig: IntervalConfig,
     val emaConfig: List<EmaConfig> = listOf(
         EmaConfig(6, 0.2),
