@@ -250,6 +250,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
 
         if (signals.containsKey(Prediction.Neutral::class.java)) return Prediction.Neutral
 
+        if (signals.containsKey(Prediction.Buy::class.java) && signals.containsKey(Prediction.Sell::class.java)) return Prediction.Neutral
         logger.info( "[interval Buy score: $buyScore*************interval Sell score: $sellScore from the bot]" )
 
         return when {
