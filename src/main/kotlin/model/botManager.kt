@@ -40,6 +40,7 @@ class BotManager(private val service: BotService) {
                         if (newPosition != currentPosition) {
                             position[config.botName] = newPosition
                         }
+                        if (predictions[config.botName]!!.size > config.patienceTime + 20) predictions[config.botName]!!.drop(9)
                         delay(30.seconds)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event

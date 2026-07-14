@@ -72,13 +72,13 @@ data class BotConfig(
     val intervalConfig: IntervalConfig,
     val emaConfig: List<EmaConfig> = listOf(
         EmaConfig(6, 0.2),
+        EmaConfig(7, 0.2),
         EmaConfig(8, 0.2),
+        EmaConfig(9, 0.2),
+        EmaConfig(10, 0.2),
         EmaConfig(11, 0.2),
-        EmaConfig(14, 0.2),
-        EmaConfig(17, 0.2),
-        EmaConfig(20, 0.2),
-        EmaConfig(23, 0.2),
-        EmaConfig(26, 0.2)
+        EmaConfig(12, 0.2),
+        EmaConfig(13, 0.2)
     ),
     val shortestPeriod: Int,
     val overTrade: Boolean,
