@@ -8,12 +8,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
     suspend fun start(config: BotConfig, positions: MutableList<Int>): Int {
 
-        val strategies = config.emaConfig.map {
-            SmaCrossoverStrategy(shortPeriod = config.shortestPeriod, it.period) to it.weight
-        }
-
         val predictorConfig = EngineConfig(
-            strategies = strategies,
+            strategy = SmaCrossoverStrategy(shortPeriod = config.shorPeriod, longPeriod = config.longPeriod),
             minRequiredSignals = 1,
             threshold = config.threshold
         )

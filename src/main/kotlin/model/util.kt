@@ -70,17 +70,8 @@ data class BotConfig(
     val patienceTime: Int,
     val threshold: Double = 0.5,
     val intervalConfig: IntervalConfig,
-    val emaConfig: List<EmaConfig> = listOf(
-        EmaConfig(6, 0.2),
-        EmaConfig(7, 0.2),
-        EmaConfig(8, 0.2),
-        EmaConfig(9, 0.2),
-        EmaConfig(10, 0.2),
-        EmaConfig(11, 0.2),
-        EmaConfig(12, 0.2),
-        EmaConfig(13, 0.2)
-    ),
-    val shortestPeriod: Int,
+    val longPeriod: Int ,
+    val shortPeriod: Int,
     val overTrade: Boolean,
     val demo: Boolean
 )

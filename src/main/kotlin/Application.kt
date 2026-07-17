@@ -157,7 +157,8 @@ fun main() {
                                         secretKey = "qiAJjxhWsoqDJ3pGWn9rZ1pbtVJ8cywadXlW",
                                         patienceTime = 1,
                                         intervalConfig = IntervalConfig(),
-                                        shortestPeriod = 5,
+                                        longPeriod = 21,
+                                        shortPeriod = 9,
                                         overTrade = false,
                                         demo = true
                                     )

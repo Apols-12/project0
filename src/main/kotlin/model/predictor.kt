@@ -146,7 +146,7 @@ class SmaCrossoverStrategy(
  * Configuration for the engine and its strategies.
  */
 data class EngineConfig(
-    val strategies: List<Pair<PredictionStrategy, Double>>, // strategy to weight
+    val strategy: PredictionStrategy, // strategy to weight
     val minRequiredSignals: Int = 2,
     val threshold: Double = 0.5
 )
@@ -164,44 +164,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             logger.warn("Empty kline list received, returning Neutral")
             return Prediction.Neutral
         }
-
-        val signals = mutableMapOf<Class<out Prediction>, Double>()
-
-        for ((strategy, weight) in engineConfig.strategies) {
-            try {
-                val prediction = strategy.predict(klines)
-                when (prediction) {
-                    is Prediction.Buy -> {
-                        signals[Prediction.Buy::class.java] =
-                            (signals[Prediction.Buy::class.java] ?: 0.0) + weight * prediction.confidence
-                    }
-                    is Prediction.Sell -> {
-                        signals[Prediction.Sell::class.java] =
-                            (signals[Prediction.Sell::class.java] ?: 0.0) + weight * prediction.confidence
-                    }
-                    Prediction.Neutral -> { /* no weight */ }
-                }
-                logger.trace("Strategy {}: prediction {}", strategy::class.simpleName, prediction)
-            } catch (e: Exception) {
-                logger.error(e) { "Strategy ${strategy::class.simpleName} failed, skipping" }
-            }
-        }
-
-
-        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
-        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
-        val totalSignals = buyScore + sellScore
-        logger.info("[total ema signals: $totalSignals]")
-
-        logger.info("[ema Buy Score: $buyScore, ema Sell score: $sellScore]")
-
-        return when {
-            buyScore > engineConfig.threshold && buyScore > sellScore ->
-                Prediction.Buy(buyScore)
-            sellScore > engineConfig.threshold && sellScore > buyScore ->
-                Prediction.Sell(sellScore)
-            else -> Prediction.Neutral
-        }
+        return engineConfig.strategy.predict(klines)
     }
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
@@ -247,8 +210,6 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
 
         val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
         val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
-
-        if (signals.containsKey(Prediction.Neutral::class.java)) return Prediction.Neutral
 
         if (signals.containsKey(Prediction.Buy::class.java) && signals.containsKey(Prediction.Sell::class.java)) return Prediction.Neutral
         logger.info( "[interval Buy score: $buyScore*************interval Sell score: $sellScore from the bot]" )
