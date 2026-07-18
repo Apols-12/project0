@@ -215,9 +215,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         logger.info( "[interval Buy score: $buyScore*************interval Sell score: $sellScore from the bot]" )
 
         return when {
-            buyScore > config.threshold && buyScore > sellScore->
+            buyScore > sellScore->
                 Prediction.Buy(buyScore)
-            sellScore > config.threshold && sellScore > buyScore ->
+            sellScore > buyScore ->
                 Prediction.Sell(sellScore)
             else -> Prediction.Neutral
         }
