@@ -149,16 +149,16 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
-                                        tpPercent = 0.02,
-                                        slPercent = 0.01,
+                                        tpPercent = 0.07,
+                                        slPercent = 0.05,
                                         leverage = 10,
                                         qty = "10",
                                         apiKey = "TZEk4Xr0lDoZunZPg6",
                                         secretKey = "qiAJjxhWsoqDJ3pGWn9rZ1pbtVJ8cywadXlW",
-                                        patienceTime = 1,
+                                        patienceTime = 5,
                                         intervalConfig = IntervalConfig(),
-                                        longPeriod = 21,
-                                        shortPeriod = 9,
+                                        longPeriod = 13,
+                                        shortPeriod = 7,
                                         overTrade = false,
                                         demo = true
                                     )
