@@ -177,7 +177,7 @@ val klines = networkService.getKline(
                     limit = 1000
                 )
 
-                val prediction = predict(klines)  
+                return predict(klines)  
        
     }
 }
