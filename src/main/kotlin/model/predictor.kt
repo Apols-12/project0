@@ -168,58 +168,16 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
     }
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
-        val intervalWeigh = mutableMapOf(
-            "15" to config.intervalConfig.config15m,
-            "30" to config.intervalConfig.config30m
-        )
-
-        val signals = mutableMapOf<Class<out Prediction>, Double>()
-        val intervalSignals = mutableMapOf<String, Double>()
-
-        for ((interval, weigh) in intervalWeigh) {
-            try {
-                val klines = networkService.getKline(
+        
+  
+val klines = networkService.getKline(
                     baseUrl = "https://api.bybit.com/v5/market/kline",
                     symbol = config.symbol,
-                    interval = interval,
+                    interval = "5",
                     limit = 1000
                 )
 
-                val prediction = predict(klines)
-
-                when(prediction) {
-                    is Prediction.Buy -> {
-                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) +  weigh * prediction.confidence
-                        signals[Prediction.Buy::class.java] =
-                            (signals[Prediction.Buy::class.java] ?: 0.0) + weigh * prediction.confidence
-                    }
-
-                    is Prediction.Sell -> {
-                        intervalSignals[interval] = (intervalSignals[interval] ?: 0.0) + weigh * prediction.confidence
-                        signals[Prediction.Sell::class.java] =
-                            (signals[Prediction.Sell::class.java] ?: 0.0) + weigh * prediction.confidence
-                    }
-
-                    is Prediction.Neutral -> { }
-                }
-                logger.info("[Interval $interval*******************prediction $prediction]")
-            } catch (e: Exception) {
-                logger.info("[Failed for interval $interval********************with exception: ${e.message}]")
-            }
-        }
-
-        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
-        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
-
-        if (signals.containsKey(Prediction.Buy::class.java) && signals.containsKey(Prediction.Sell::class.java)) return Prediction.Neutral
-        logger.info( "[interval Buy score: $buyScore*************interval Sell score: $sellScore from the bot]" )
-
-        return when {
-            buyScore > sellScore->
-                Prediction.Buy(buyScore)
-            sellScore > buyScore ->
-                Prediction.Sell(sellScore)
-            else -> Prediction.Neutral
-        }
+                val prediction = predict(klines)  
+       
     }
 }
