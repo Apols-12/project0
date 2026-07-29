@@ -168,6 +168,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
     }
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
+<<<<<<< HEAD
 
         try {
             val klines = networkService.getKline(
@@ -181,5 +182,18 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             logger.info("[Failed for interval ${config.interval}********************with exception: ${e.message}]")
             return Prediction.Neutral
         }
+=======
+        
+  
+val klines = networkService.getKline(
+                    baseUrl = "https://api.bybit.com/v5/market/kline",
+                    symbol = config.symbol,
+                    interval = "5",
+                    limit = 1000
+                )
+
+                return predict(klines)  
+       
+>>>>>>> 12a5f4716b50bac27e0dc3d04d1c4391064485f1
     }
 }
