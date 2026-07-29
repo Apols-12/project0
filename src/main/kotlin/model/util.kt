@@ -69,24 +69,14 @@ data class BotConfig(
     val secretKey: String,
     val patienceTime: Int,
     val threshold: Double = 0.5,
-    val intervalConfig: IntervalConfig,
+    val interval: String = "5",
     val longPeriod: Int ,
     val shortPeriod: Int,
     val overTrade: Boolean,
     val demo: Boolean
 )
 
-@Serializable
-data class IntervalConfig(
-    val config15m : Double = 0.3,
-    val config30m: Double = 0.3
-)
 
-@Serializable
-data class EmaConfig(
-    val period: Int,
-    val weight: Double
-)
 data class TKlines(
     val close: Double,
     val change: Double,

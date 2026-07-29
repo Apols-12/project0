@@ -29,7 +29,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
-        val isNeutral = positions.count { it == 2 } > 3
+        val isNeutral = positions.count { it == 2 } > 10
         if (isNeutral) positions.clear()
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
@@ -70,7 +70,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
 
-            positions.size > config.patienceTime + 5  && !hasOpenPosition -> {
+            positions.size > config.patienceTime + 1  && !hasOpenPosition -> {
                 logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 return actualDir
             }
