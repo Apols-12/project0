@@ -70,6 +70,7 @@ data class BotConfig(
     val patienceTime: Int,
     val threshold: Double = 0.5,
     val interval: String = "5",
+    val patienceLevel: Int = 1,
     val longPeriod: Int ,
     val shortPeriod: Int,
     val overTrade: Boolean,
