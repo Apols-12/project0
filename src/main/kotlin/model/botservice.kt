@@ -1,11 +1,18 @@
 package com.apols.model
 
 import mu.KotlinLogging
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
+    @OptIn(ExperimentalTime::class)
+    private var firstN: Instant? = null
     private val logger = KotlinLogging.logger("Prediction")
 
+    @OptIn(ExperimentalTime::class)
     suspend fun start(config: BotConfig, positions: MutableList<Int>): Int {
 
         val predictorConfig = EngineConfig(
@@ -29,8 +36,19 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
-        val isNeutral = positions.count { it == 2 } > config.patienceLevel
-        if (isNeutral) positions.clear()
+        if (positions.count { it == 2 } == 1) {
+            firstN = Clock.System.now()
+        }
+
+        if (firstN != null && positions.count { it == 2 } >= 2) {
+            if (firstN!! > Clock.System.now().minus(4.minutes)) {
+                val isNeutral = positions.count { it == 2 } > config.patienceLevel
+                if (isNeutral) positions.clear()
+            } else {
+                positions.remove(2)
+            }
+        }
+
         if (positions.contains(0) && positions.contains(1)) positions.clear()
 
         val smoothed = positions.count { it == actualDir } > config.patienceTime
