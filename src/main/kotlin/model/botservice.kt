@@ -41,9 +41,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
         }
 
         if (firstN != null && positions.count { it == 2 } >= 2) {
-            if (firstN!! > Clock.System.now().minus(4.minutes)) {
-                val isNeutral = positions.count { it == 2 } > config.patienceLevel
-                if (isNeutral) positions.clear()
+            if (firstN!! > Clock.System.now().minus(config.patienceTime.minutes)) {
+                 positions.clear()
             } else {
                 positions.remove(2)
             }
