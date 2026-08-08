@@ -1,19 +1,13 @@
 package com.apols.model
 
 import mu.KotlinLogging
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
-    @OptIn(ExperimentalTime::class)
-    private var firstN: Instant? = null
+
     private val logger = KotlinLogging.logger("Prediction")
 
-    @OptIn(ExperimentalTime::class)
-    suspend fun start(config: BotConfig, positions: MutableList<Int>): Int {
+    suspend fun start(config: BotConfig, currentDir: Int): Int {
 
         val predictorConfig = EngineConfig(
             strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
@@ -36,24 +30,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Neutral -> 2
         }
 
-        if (positions.count { it == 2 } == 1) {
-            firstN = Clock.System.now()
-        }
-
-        if (firstN != null && positions.count { it == 2 } >= 2) {
-            if (firstN!! > Clock.System.now().minus(config.patienceTime.minutes)) {
-                 positions.clear()
-            } else {
-                positions.remove(2)
-            }
-        }
-
-        if (positions.contains(0) && positions.contains(1)) positions.clear()
-
-        val smoothed = positions.count { it == actualDir } > config.patienceTime
-        val smoothedDir = if (smoothed) actualDir else 2
-
-        val dir = direction[smoothedDir].toString()
+        val dir = direction[actualDir].toString()
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $dir and the actual is ${direction[actualDir]}")
 
@@ -61,17 +38,27 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         when {
 
-            smoothedDir == 2 && hasOpenPosition -> {
+            currentDir == 2 -> {
                 coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
                 return actualDir
             }
 
-            smoothedDir == 2 && !hasOpenPosition -> {
-                logger.info("<<<<<<<<>>>>>>>>>>>>>>>><<<<<<<wait for clear signal>>>>>>>>>")
-                return actualDir
+            actualDir == 2 -> {
+                logger.info("Wait for clear signal")
             }
 
-            !hasOpenPosition && config.overTrade -> {
+            actualDir == currentDir && !config.overTrade && hasOpenPosition -> {
+                logger.info("Wait, no need to place a new trade")
+
+            }
+
+            actualDir == currentDir && !config.overTrade && !hasOpenPosition -> {
+                logger.info("Please configure over trade")
+
+            }
+
+
+            actualDir != 2 && !hasOpenPosition && config.overTrade -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -87,12 +74,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
 
-            positions.size > config.patienceTime + 1  && !hasOpenPosition -> {
-                logger.info("<<<<<<<<<<<<<<<<<<<<<<<No over trade configured>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                return actualDir
-            }
 
-            smoothedDir != 2 && !hasOpenPosition -> {
+            actualDir != 2 && !hasOpenPosition -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -112,5 +95,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
         }
+
+        return actualDir
     }
 }
