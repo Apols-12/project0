@@ -47,18 +47,12 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 logger.info("Wait for clear signal")
             }
 
-            actualDir == currentDir && !config.overTrade && hasOpenPosition -> {
+            !config.overTrade && hasOpenPosition -> {
                 logger.info("Wait, no need to place a new trade")
 
             }
 
-            actualDir == currentDir && !config.overTrade && !hasOpenPosition -> {
-                logger.info("Please configure over trade")
-
-            }
-
-
-            actualDir != 2 && !hasOpenPosition && config.overTrade -> {
+            actualDir != 2 && !hasOpenPosition && !config.overTrade -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
@@ -74,7 +68,12 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
 
-            actualDir != 2 && !hasOpenPosition && !config.overTrade -> {
+            config.overTrade && hasOpenPosition -> {
+                logger.info("No need to place new order")
+
+            }
+
+            actualDir != 2  -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
