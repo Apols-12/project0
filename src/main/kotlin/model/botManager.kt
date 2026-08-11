@@ -40,7 +40,7 @@ class BotManager(private val service: BotService) {
                             position[config.botName] = newPosition
                         }
 
-                        delay(60.seconds)
+                        delay(5.seconds)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event
                         logger.info("[${config.botName}] Bot stopped gracefully")
