@@ -38,11 +38,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         when {
 
-            currentDir == 2 -> {
-                coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
-                return actualDir
-            }
-
             actualDir == 2 -> {
                 logger.info("Wait for clear signal")
             }
