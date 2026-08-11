@@ -74,8 +74,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
 
-
-            actualDir != 2 && !hasOpenPosition -> {
+            actualDir != 2 && !hasOpenPosition && !config.overTrade -> {
                 coreFeature.placeOrderWithTPSL(
                     apiKey = config.apiKey,
                     secret = config.secretKey,
