@@ -36,59 +36,114 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
-        when {
-
-            actualDir == 2 -> {
+        if(!config.overTrade) {
+            if (actualDir != 2 && currentDir != 2) {
+                if (actualDir != currentDir) {
+                    if (!hasOpenPosition) {
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        return actualDir
+                    } else {
+                        coreFeature.closeOpenPositions(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            category = config.category,
+                            symbol = config.symbol,
+                            useDemo = config.demo
+                        )
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        return actualDir
+                    }
+                } else {
+                    logger.info("No need to enter new trade ")
+                    return actualDir
+                }
+            } else {
                 logger.info("Wait for clear signal")
-            }
-
-            !config.overTrade && hasOpenPosition -> {
-                logger.info("Wait, no need to place a new trade")
-
-            }
-
-            actualDir != 2 && !hasOpenPosition && !config.overTrade -> {
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
                 return actualDir
             }
-
-            config.overTrade && hasOpenPosition -> {
-                logger.info("No need to place new order")
-
-            }
-
-            actualDir != 2  -> {
-                coreFeature.placeOrderWithTPSL(
-                    apiKey = config.apiKey,
-                    secret = config.secretKey,
-                    side = dir,
-                    symbol = config.symbol,
-                    quantity = config.qty,
-                    leverage = config.leverage,
-                    takeProfitPercent = config.tpPercent,
-                    stopLossPercent = config.slPercent,
-                    category = config.category,
-                    useDemo = config.demo
-                )
-                return actualDir
-            }
-
-            else -> {
+        } else {
+            if (actualDir != 2 && currentDir != 2) {
+                if (actualDir != currentDir) {
+                    if (!hasOpenPosition) {
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        return actualDir
+                    } else {
+                        coreFeature.closeOpenPositions(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            category = config.category,
+                            symbol = config.symbol,
+                            useDemo = config.demo
+                        )
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        return actualDir
+                    }
+                } else {
+                    if (!hasOpenPosition) {
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = dir,
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                        return actualDir
+                    }
+                    return actualDir
+                }
+            } else {
+                logger.info("Wait for clear signal to enter a trade")
                 return actualDir
             }
         }
-
-        return actualDir
     }
 }
