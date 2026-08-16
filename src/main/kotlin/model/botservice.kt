@@ -72,13 +72,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         )
                         return actualDir
                     } else {
-                        coreFeature.closeOpenPositions(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            category = config.category,
-                            symbol = config.symbol,
-                            useDemo = config.demo
-                        )
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,
                             secret = config.secretKey,
@@ -119,13 +112,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         )
                         return actualDir
                     } else {
-                        coreFeature.closeOpenPositions(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            category = config.category,
-                            symbol = config.symbol,
-                            useDemo = config.demo
-                        )
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,
                             secret = config.secretKey,
