@@ -7,7 +7,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
     private val logger = KotlinLogging.logger("Prediction")
 
-    suspend fun start(config: BotConfig, currentDir: Int): Int {
+    suspend fun start(config: BotConfig, currentDir: Int?): Int {
 
         val predictorConfig = EngineConfig(
             strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
@@ -35,6 +35,24 @@ class BotService(private val networkService: NetworkService, private val coreFea
         logger.info("The smoothed Model prediction for user ${config.botName} is: $dir and the actual is ${direction[actualDir]}")
 
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
+
+        if(currentDir == null && actualDir != 2) {
+            if (!hasOpenPosition) {
+                coreFeature.placeOrderWithTPSL(
+                    apiKey = config.apiKey,
+                    secret = config.secretKey,
+                    side = dir,
+                    symbol = config.symbol,
+                    quantity = config.qty,
+                    leverage = config.leverage,
+                    takeProfitPercent = config.tpPercent,
+                    stopLossPercent = config.slPercent,
+                    category = config.category,
+                    useDemo = config.demo
+                )
+                return actualDir
+            }
+        }
 
         if(!config.overTrade) {
             if (actualDir != 2 && currentDir != 2) {

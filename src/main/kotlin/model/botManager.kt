@@ -33,7 +33,7 @@ class BotManager(private val service: BotService) {
             activeBots[config.botName] = scope.launch {
                 while (isActive) {
                     try {
-                        val currentPosition = position[config.botName] ?: 2
+                        val currentPosition = position[config.botName]
                         val newPosition = service.start(config, currentPosition)
 
                         if (newPosition != currentPosition) {
