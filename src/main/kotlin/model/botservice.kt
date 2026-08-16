@@ -55,7 +55,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
         }
 
         if(!config.overTrade) {
-            if (actualDir != 2 && currentDir != 2) {
+            if (actualDir != 2) {
                 if (actualDir != currentDir) {
                     if (!hasOpenPosition) {
                         coreFeature.placeOrderWithTPSL(
@@ -102,7 +102,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 return actualDir
             }
         } else {
-            if (actualDir != 2 && currentDir != 2) {
+            if (actualDir != 2) {
                 if (actualDir != currentDir) {
                     if (!hasOpenPosition) {
                         coreFeature.placeOrderWithTPSL(
