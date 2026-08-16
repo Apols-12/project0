@@ -104,16 +104,15 @@ interface PredictionStrategy {
  */
 class SmaCrossoverStrategy(
     private val shortPeriod: Int = 20,
-    private val longPeriod: Int = 50,
-    private val rsiThreshold: Int = 50
+    private val longPeriod: Int = 50
 ) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
         val shortSma = klines.ema(shortPeriod)
         val longSma = klines.ema(longPeriod)
-        val rsi = klines.rsi() ?: rsiThreshold.toDouble()
+
         return when {
-            shortSma > longSma && rsi > rsiThreshold -> Prediction.Buy(0.7)
-            shortSma < longSma && rsi < rsiThreshold -> Prediction.Sell(0.7)
+            shortSma > longSma  -> Prediction.Buy(0.7)
+            shortSma < longSma -> Prediction.Sell(0.7)
             else -> Prediction.Neutral
         }
     }
