@@ -19,8 +19,6 @@ import kotlin.time.Duration.Companion.seconds
 class BotManager(private val service: BotService) {
     private val activeBots = ConcurrentHashMap<String, Job>()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    val position =  mutableMapOf<String, Int?>()
-
     val mutex = Mutex()
     private val logger = KotlinLogging.logger("bot_manager_logs")
     val botStatus get() =  activeBots.mapValues {
@@ -33,13 +31,7 @@ class BotManager(private val service: BotService) {
             activeBots[config.botName] = scope.launch {
                 while (isActive) {
                     try {
-                        val currentPosition = position[config.botName]
-                        val newPosition = service.start(config, currentPosition)
-
-                        if (newPosition != currentPosition) {
-                            position[config.botName] = newPosition
-                        }
-
+                        service.start(config)
                         delay(5.seconds)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event
@@ -57,8 +49,6 @@ class BotManager(private val service: BotService) {
     fun stopBot(userId: String) {
         activeBots[userId]?.let {
             it.cancel("User Requested Stop")
-            position.remove(userId)
-
             activeBots.remove(userId)
             logger.info("Bot stop successfully")
             // We can also notify the user after that

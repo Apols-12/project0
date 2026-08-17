@@ -424,7 +424,6 @@ class CoreFeature(private val httpClient: HttpClient) {
         val side = hasOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
         if (side) {
             logger.info("There are/is an open position....>...>...>...>...>...>...>...>...>...>...>...>...>")
-//            cancelOpenPosition(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
             closeOpenPositions(apiKey = apiKey, secret = secret, symbol = symbol, category = category, useDemo = useDemo)
             val response2 = scope.async {  authenticatedOrder("$url/v5/order/create", orderRequest) }.await()
             if (response2.retCode != 0) {
