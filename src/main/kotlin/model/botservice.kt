@@ -4,7 +4,6 @@ import mu.KotlinLogging
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
-
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig) {
@@ -45,20 +44,23 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         logger.info("Already in Long position")
                     }
                 } else {
-                    logger.info("Opening Long position")
-
-                    coreFeature.placeOrderWithTPSL(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = "Buy",
-                        symbol = config.symbol,
-                        quantity = config.qty,
-                        leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
-                        category = config.category,
-                        useDemo = config.demo
-                    )
+                    if (config.overTrade) {
+                        logger.info("Opening Long position+++++++++++++++++++++++++++++++++++++++++++++++++")
+                        coreFeature.placeOrderWithTPSL(
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = "Buy",
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                    } else {
+                        logger.info("If want to trade please configure over trade")
+                    }
                 }
             }
 
@@ -82,20 +84,24 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         logger.info("Already in Short position>>>>>>>>>>><<<<<<<<>>>>>>>>><<<<<<<>>>>>>>>>>>")
                     }
                 } else {
-                    logger.info("Opening Short position<<<<<<<<<<<<<<>>>>>>>>>>>>>>><<<<<<<<<<<<>>>>>>>>>>>>")
+                    if (config.overTrade) {
+                        logger.info("Opening Short position<<<<<<<<<<<<<<>>>>>>>>>>>>>>><<<<<<<<<<<<>>>>>>>>>>>>")
+                        coreFeature.placeOrderWithTPSL(
 
-                    coreFeature.placeOrderWithTPSL(
-                        apiKey = config.apiKey,
-                        secret = config.secretKey,
-                        side = "Sell",
-                        symbol = config.symbol,
-                        quantity = config.qty,
-                        leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
-                        category = config.category,
-                        useDemo = config.demo
-                    )
+                            apiKey = config.apiKey,
+                            secret = config.secretKey,
+                            side = "Sell",
+                            symbol = config.symbol,
+                            quantity = config.qty,
+                            leverage = config.leverage,
+                            takeProfitPercent = config.tpPercent,
+                            stopLossPercent = config.slPercent,
+                            category = config.category,
+                            useDemo = config.demo
+                        )
+                    } else {
+                        logger.info("Configure over trade to trade+++++++++++++++++++++++++++++++++++++++")
+                    }
                 }
             }
 
