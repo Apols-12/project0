@@ -62,6 +62,11 @@ data class BotConfig(
     val botName: String,
     val symbol: String,
     val qty: String,
+    val strategy: List<PredictionStrategy> = listOf(
+        SmaCrossoverStrategy(shortPeriod = 7, longPeriod = 11),
+        SmaCrossoverStrategy(shortPeriod = 7, longPeriod = 13),
+        SmaCrossoverStrategy(shortPeriod = 7, 15)
+    ),
     val leverage: Int,
     val tpPercent: Double,
     val slPercent: Double,

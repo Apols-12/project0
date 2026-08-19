@@ -146,26 +146,13 @@ class MacdCrossoverStrategy(
  * Configuration for the engine and its strategies.
  */
 data class EngineConfig(
-    val strategy: PredictionStrategy, // strategy to weight
+    val strategy: List<Pair<PredictionStrategy, Double>>, // strategy to weight
     val minRequiredSignals: Int = 2,
     val threshold: Double = 0.5
 )
 
 class PredictionEngine(private val engineConfig: EngineConfig) {
     private val logger = KotlinLogging.logger("predictor")
-
-    /**
-     * Process a time-sorted list of Klines and return the aggregated prediction.
-     * Always returns a valid Prediction, never throws.
-     */
-    private fun predict(klines: List<Kline>): Prediction {
-        logger.debug ("Processing ${klines.size} klines")
-        if (klines.isEmpty()) {
-            logger.warn("Empty kline list received, returning Neutral")
-            return Prediction.Neutral
-        }
-        return engineConfig.strategy.predict(klines)
-    }
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
         try {
@@ -179,6 +166,64 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         } catch (e: Exception) {
             logger.info("[Failed for interval ${config.interval}********************with exception: ${e.message}]")
             return Prediction.Neutral
+        }
+    }
+
+    /**
+     * Process a time-sorted list of _root_ide_package_.org.example.Kline and return the aggregated prediction.
+     * Always returns a valid Prediction, never throws.
+     */
+    fun predict(klines: List<Kline>): Prediction {
+        logger.debug { "Processing ${klines.size} klines" }
+        if (klines.isEmpty()) {
+            logger.warn("Empty kline list received, returning Neutral")
+            return Prediction.Neutral
+        }
+
+        val signals = mutableMapOf<Class<out Prediction>, Double>()
+        var totalWeight = 0.0
+
+        for ((strategy, weight) in engineConfig.strategy) {
+            try {
+                val prediction = strategy.predict(klines)
+                when (prediction) {
+                    is Prediction.Buy -> {
+                        signals[Prediction.Buy::class.java] =
+                            (signals[Prediction.Buy::class.java] ?: 0.0) + weight * prediction.confidence
+                        totalWeight += weight
+                    }
+                    is Prediction.Sell -> {
+                        signals[Prediction.Sell::class.java] =
+                            (signals[Prediction.Sell::class.java] ?: 0.0) + weight * prediction.confidence
+                        totalWeight += weight
+                    }
+                    Prediction.Neutral -> { /* no weight */ }
+                }
+                logger.info { "Strategy ${strategy::class.simpleName}: $prediction" }
+            } catch (e: Exception) {
+                logger.error(e) { "Strategy ${strategy::class.simpleName} failed, skipping" }
+            }
+        }
+
+        if (totalWeight == 0.0 || signals.isEmpty()) {
+            logger.info("No valid signals generated, returning Neutral")
+            return Prediction.Neutral
+        }
+
+        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
+        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
+
+        val buyRatio = buyScore / totalWeight
+        val sellRatio = sellScore / totalWeight
+
+        logger.debug { "Buy ratio: $buyRatio, Sell ratio: $sellRatio" }
+
+        return when {
+            buyScore > sellScore ->
+                Prediction.Buy(buyRatio)
+            sellScore > buyScore ->
+                Prediction.Sell(sellRatio)
+            else -> Prediction.Neutral
         }
     }
 }
