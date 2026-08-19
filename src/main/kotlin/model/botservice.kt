@@ -10,9 +10,13 @@ class BotService(private val networkService: NetworkService, private val coreFea
     suspend fun start(config: BotConfig) {
 
         val predictorConfig = EngineConfig(
-            strategy = config.strategy.map { SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod)  to 0.5 },
+            strategy = listOf(
+                SmaCrossoverStrategy(7, 11) to 0.5,
+                SmaCrossoverStrategy(7, 13) to 0.5,
+                SmaCrossoverStrategy(7, 15) to 0.5,
+                ),
             minRequiredSignals = 1,
-            threshold = config.threshold
+            threshold = 0.5
         )
 
         val engine = PredictionEngine(predictorConfig)

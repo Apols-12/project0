@@ -154,9 +154,6 @@ fun main() {
                                         qty = "10",
                                         apiKey = "TZEk4Xr0lDoZunZPg6",
                                         secretKey = "qiAJjxhWsoqDJ3pGWn9rZ1pbtVJ8cywadXlW",
-                                        patienceTime = 5,
-                                        longPeriod = 13,
-                                        shortPeriod = 7,
                                         overTrade = false,
                                         demo = true
                                     )
