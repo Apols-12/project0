@@ -12,9 +12,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictorConfig = EngineConfig(
             strategy = listOf(
-                SmaCrossoverStrategy(7, 11) to 0.5,
-                SmaCrossoverStrategy(7, 13) to 0.5,
-                SmaCrossoverStrategy(7, 15) to 0.5,
+                SmaCrossoverStrategy(7, 9) to 0.5,
+                SmaCrossoverStrategy(8, 10) to 0.5
                 ),
             minRequiredSignals = 1,
             threshold = 0.5
@@ -25,7 +24,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
-
+        logger.info("can enter long $canEnterLong, can enter short $canEnterShort")
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         val position = coreFeature.getOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo).firstOrNull()
@@ -34,7 +33,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 if (hasOpenPosition) {
                     if (position!!.side != "Buy") {
                         logger.info("Signal is Buy, closing Short and opening Long position")
-                        canEnterLong = false
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,
                             secret = config.secretKey,
@@ -49,6 +47,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         )
                     } else {
                         logger.info("Already in Long position")
+                        canEnterLong = false
                         canEnterShort = true
                     }
                 } else {
@@ -73,7 +72,6 @@ class BotService(private val networkService: NetworkService, private val coreFea
             is Prediction.Sell -> {
                 if (hasOpenPosition) {
                     if (position!!.side != "Sell") {
-                        canEnterShort = false
                         logger.info("Signal is Sell, closing Long and opening Short position________++++++++++_________++++++++______")
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,
@@ -88,6 +86,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             useDemo = config.demo
                         )
                     } else {
+                        canEnterShort = false
                         canEnterLong = true
                         logger.info("Already in Short position>>>>>>>>>>><<<<<<<<>>>>>>>>><<<<<<<>>>>>>>>>>>")
                     }
