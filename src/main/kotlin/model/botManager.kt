@@ -6,6 +6,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -23,6 +25,12 @@ class BotManager(private val service: BotService) {
     private val logger = KotlinLogging.logger("bot_manager_logs")
     val botStatus get() =  activeBots.mapValues {
         if (it.value.isActive) "Running" else "Stopped"
+    }
+
+    fun getBotsStatus(): Flow<BotStat> {
+        return botStatus.map {
+            BotStat(it.key, it.value)
+        }.asFlow()
     }
 
     suspend fun startBot(config: BotConfig) {

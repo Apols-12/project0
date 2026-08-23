@@ -231,7 +231,7 @@ fun main() {
                             }
                         }
                     }) {
-                        val runningBoots = botService.botStatus
+                        val runningBoots = botService.getBotsStatus()
                         call.respond(runningBoots)
                     }
                 }

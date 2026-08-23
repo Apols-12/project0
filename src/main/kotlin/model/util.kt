@@ -56,6 +56,12 @@ data class Kline(
     }
 }
 
+
+@Serializable
+data class BotStat(
+    val name: String,
+    val status: String
+)
 @Serializable
 data class BotConfig(
     val category: String = "linear",
@@ -65,6 +71,10 @@ data class BotConfig(
     val leverage: Int,
     val tpPercent: Double,
     val slPercent: Double,
+    val shortPeriod1: Int = 4,
+    val shortPeriod2: Int = 5,
+    val longPeriod1: Int = 6,
+    val longPeriod2: Int = 7,
     val apiKey: String,
     val secretKey: String,
     val interval: String = "5",

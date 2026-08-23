@@ -12,8 +12,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictorConfig = EngineConfig(
             strategy = listOf(
-                SmaCrossoverStrategy(7, 9) to 0.5,
-                SmaCrossoverStrategy(8, 10) to 0.5
+                SmaCrossoverStrategy(config.shortPeriod1, config.longPeriod1) to 0.5,
+                SmaCrossoverStrategy(config.shortPeriod2, config.longPeriod2) to 0.5
                 ),
             minRequiredSignals = 1,
             threshold = 0.5
@@ -47,7 +47,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         )
                     } else {
                         logger.info("Already in Long position")
-                        canEnterLong = false
+                        canEnterLong = config.overTrade
                         canEnterShort = true
                     }
                 } else {
@@ -86,7 +86,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             useDemo = config.demo
                         )
                     } else {
-                        canEnterShort = false
+                        canEnterShort = config.overTrade
                         canEnterLong = true
                         logger.info("Already in Short position>>>>>>>>>>><<<<<<<<>>>>>>>>><<<<<<<>>>>>>>>>>>")
                     }
