@@ -4,6 +4,9 @@ import mu.KotlinLogging
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
+    private val canEnterLongPosition = mutableMapOf<String, Boolean>()
+    private val canEnterShortPosition = mutableMapOf<String, Boolean>()
+
     private var canEnterLong: Boolean = true
     private var canEnterShort: Boolean = true
     private val logger = KotlinLogging.logger("Prediction")
@@ -47,11 +50,11 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         )
                     } else {
                         logger.info("Already in Long position")
-                        canEnterLong = config.overTrade
-                        canEnterShort = true
+                        canEnterLongPosition[config.botName] = config.overTrade
+                        canEnterShortPosition[config.botName] = true
                     }
                 } else {
-                    if (canEnterLong) {
+                    if (canEnterLongPosition[config.botName] ?: true) {
                         logger.info("Opening New Long position+++++++++++++++++++++++++++++++++++++++++++++++++")
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,
@@ -86,12 +89,12 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             useDemo = config.demo
                         )
                     } else {
-                        canEnterShort = config.overTrade
-                        canEnterLong = true
+                        canEnterShortPosition[config.botName] = config.overTrade
+                        canEnterLongPosition[config.botName] = true
                         logger.info("Already in Short position>>>>>>>>>>><<<<<<<<>>>>>>>>><<<<<<<>>>>>>>>>>>")
                     }
                 } else {
-                    if (canEnterShort) {
+                    if (canEnterShortPosition[config.botName] ?: true) {
                         logger.info("Opening New Short position+++++++++++++++++++++++++++++++++++++++++++++++++")
                         coreFeature.placeOrderWithTPSL(
                             apiKey = config.apiKey,

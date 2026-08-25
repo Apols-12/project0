@@ -8,6 +8,7 @@ import com.apols.model.BackgrounWork
 import com.apols.model.BotConfig
 import com.apols.model.BotManager
 import com.apols.model.BotService
+import com.apols.model.BotStat
 import com.apols.model.CoreFeature
 import com.apols.model.NetworkService
 import io.github.smiley4.ktoropenapi.OpenApi
@@ -45,6 +46,7 @@ import io.ktor.server.sessions.SessionTransportTransformerEncrypt
 import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.cookie
 import io.ktor.util.hex
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -224,7 +226,7 @@ fun main() {
                         response {
                             code(HttpStatusCode.OK) {
                                 description = "Get this status code for a successful request"
-                                body<Map<String, String>> {
+                                body<Flow<BotStat>> {
                                     required = true
                                     description = "All the running boots"
                                 }
