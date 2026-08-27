@@ -226,4 +226,8 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             else -> Prediction.Neutral
         }
     }
+
+    fun intervalPredict(networkService: NetworkService): Prediction {
+        return Prediction.Neutral
+    }
 }

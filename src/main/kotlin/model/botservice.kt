@@ -4,11 +4,9 @@ import mu.KotlinLogging
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
 
-    private val canEnterLongPosition = mutableMapOf<String, Boolean>()
-    private val canEnterShortPosition = mutableMapOf<String, Boolean>()
+    val canEnterLongPosition = mutableMapOf<String, Boolean>()
+    val canEnterShortPosition = mutableMapOf<String, Boolean>()
 
-    private var canEnterLong: Boolean = true
-    private var canEnterShort: Boolean = true
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig) {
@@ -27,7 +25,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
-        logger.info("can enter long $canEnterLong, can enter short $canEnterShort")
+        logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         val position = coreFeature.getOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo).firstOrNull()
