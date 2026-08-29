@@ -12,10 +12,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
     suspend fun start(config: BotConfig) {
 
         val predictorConfig = EngineConfig(
-            strategy = listOf(
-                SmaCrossoverStrategy(config.shortPeriod1, config.longPeriod1) to 0.5,
-                SmaCrossoverStrategy(config.shortPeriod2, config.longPeriod2) to 0.5
-                ),
+            strategy = MacdCrossoverStrategy(fast = config.fast, slow = config.slow, signal = config.signal),
             minRequiredSignals = 1,
             threshold = 0.5
         )
@@ -111,7 +108,13 @@ class BotService(private val networkService: NetworkService, private val coreFea
             }
 
             is Prediction.Neutral -> {
+                if (hasOpenPosition) {
+                    coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
+                }
+                canEnterLongPosition[config.botName] = true
+                canEnterShortPosition[config.botName] = true
                 logger.info("No Signal, waiting.......................................................")
+                logger.info("Closing open position.......................................................")
             }
         }
     }

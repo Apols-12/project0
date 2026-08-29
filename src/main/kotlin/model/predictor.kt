@@ -146,7 +146,7 @@ class MacdCrossoverStrategy(
  * Configuration for the engine and its strategies.
  */
 data class EngineConfig(
-    val strategy: List<Pair<PredictionStrategy, Double>>, // strategy to weight
+    val strategy: PredictionStrategy, // strategy to weight
     val minRequiredSignals: Int = 2,
     val threshold: Double = 0.5
 )
@@ -155,37 +155,19 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
     private val logger = KotlinLogging.logger("predictor")
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
-        try {
-            val klines = networkService.getKline(
-                baseUrl = "https://api.bybit.com/v5/market/kline",
-                symbol = config.symbol,
-                interval = config.interval,
-                limit = 1000
-            )
-            return predict(klines)
-        } catch (e: Exception) {
-            logger.info("[Failed for interval ${config.interval}********************with exception: ${e.message}]")
-            return Prediction.Neutral
-        }
-    }
-
-    /**
-     * Process a time-sorted list of _root_ide_package_.org.example.Kline and return the aggregated prediction.
-     * Always returns a valid Prediction, never throws.
-     */
-    fun predict(klines: List<Kline>): Prediction {
-        logger.debug { "Processing ${klines.size} klines" }
-        if (klines.isEmpty()) {
-            logger.warn("Empty kline list received, returning Neutral")
-            return Prediction.Neutral
-        }
-
         val signals = mutableMapOf<Class<out Prediction>, Double>()
         var totalWeight = 0.0
+        val intervalConfig = mapOf("5" to 0.5, "15" to 0.5)
 
-        for ((strategy, weight) in engineConfig.strategy) {
-            try {
-                val prediction = strategy.predict(klines)
+        try {
+            for ((interval, weight) in intervalConfig) {
+                val klines = networkService.getKline(
+                    baseUrl = "https://api.bybit.com/v5/market/kline",
+                    symbol = config.symbol,
+                    interval = interval,
+                    limit = 1000
+                )
+                val prediction = predict(klines)
                 when (prediction) {
                     is Prediction.Buy -> {
                         signals[Prediction.Buy::class.java] =
@@ -199,14 +181,9 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
                     }
                     Prediction.Neutral -> { /* no weight */ }
                 }
-                logger.info { "Strategy ${strategy::class.simpleName}: $prediction" }
-            } catch (e: Exception) {
-                logger.error(e) { "Strategy ${strategy::class.simpleName} failed, skipping" }
             }
-        }
-
-        if (totalWeight == 0.0 || signals.isEmpty()) {
-            logger.info("No valid signals generated, returning Neutral")
+        } catch (e: Exception) {
+            logger.info("[Failed for interval ${config.interval}********************with exception: ${e.message}]")
             return Prediction.Neutral
         }
 
@@ -227,7 +204,17 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
         }
     }
 
-    fun intervalPredict(networkService: NetworkService): Prediction {
-        return Prediction.Neutral
+    /**
+     * Process a time-sorted list of _root_ide_package_.org.example.Kline and return the aggregated prediction.
+     * Always returns a valid Prediction, never throws.
+     */
+    fun predict(klines: List<Kline>): Prediction {
+        logger.debug { "Processing ${klines.size} klines" }
+        if (klines.isEmpty()) {
+            logger.warn("Empty kline list received, returning Neutral")
+            return Prediction.Neutral
+        }
+
+        return engineConfig.strategy.predict(klines)
     }
 }
