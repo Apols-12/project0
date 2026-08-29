@@ -130,9 +130,9 @@ class MacdCrossoverStrategy(
         val current = klines.macd(fast, slow, signal)
         val previous = klines.dropLast(1).macd(fast, slow, signal)
         return when {
-            current.diff > previous.diff && current.diff > current.dea ->
+            current.hist > previous.hist  ->
                 Prediction.Buy(0.8)
-            current.diff < previous.diff && current.diff < current.dea ->
+            current.hist < previous.hist ->
                 Prediction.Sell(0.8)
             else -> Prediction.Neutral
         }
@@ -153,53 +153,14 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
     private val logger = KotlinLogging.logger("predictor")
 
     suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
-        val signals = mutableMapOf<Class<out Prediction>, Double>()
-        var totalWeight = 0.0
-        val intervalConfig = mapOf("5" to 0.5, "15" to 0.5)
 
-        try {
-            for ((interval, weight) in intervalConfig) {
-                val klines = networkService.getKline(
-                    baseUrl = "https://api.bybit.com/v5/market/kline",
-                    symbol = config.symbol,
-                    interval = interval,
-                    limit = 1000
-                )
-                val prediction = predict(klines)
-                when (prediction) {
-                    is Prediction.Buy -> {
-                        signals[Prediction.Buy::class.java] =
-                            (signals[Prediction.Buy::class.java] ?: 0.0) + weight * prediction.confidence
-                        totalWeight += weight
-                    }
-                    is Prediction.Sell -> {
-                        signals[Prediction.Sell::class.java] =
-                            (signals[Prediction.Sell::class.java] ?: 0.0) + weight * prediction.confidence
-                        totalWeight += weight
-                    }
-                    Prediction.Neutral -> { /* no weight */ }
-                }
-            }
-        } catch (e: Exception) {
-            logger.info("[Failed for interval ${config.interval}********************with exception: ${e.message}]")
-            return Prediction.Neutral
-        }
-
-        val buyScore = signals[Prediction.Buy::class.java] ?: 0.0
-        val sellScore = signals[Prediction.Sell::class.java] ?: 0.0
-
-        val buyRatio = buyScore / totalWeight
-        val sellRatio = sellScore / totalWeight
-
-        logger.info { "Buy ratio: $buyRatio, Sell ratio: $sellRatio" }
-
-        return when {
-            buyScore > sellScore ->
-                Prediction.Buy(buyRatio)
-            sellScore > buyScore ->
-                Prediction.Sell(sellRatio)
-            else -> Prediction.Neutral
-        }
+        val klines = networkService.getKline(
+            baseUrl = "https://api.bybit.com/v5/market/kline",
+            symbol = config.symbol,
+            interval = config.interval,
+            limit = 1000
+        )
+        return predict(klines)
     }
 
     /**
