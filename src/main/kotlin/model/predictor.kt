@@ -28,6 +28,19 @@ fun List<Kline>.ema(period: Int): Double {
     return ema
 }
 
+private fun ema0(values: List<Double>, period: Int): List<Double> {
+    if (values.isEmpty() || period < 1) return emptyList()
+    val multiplier = 2.0 / (period + 1)
+    val result = mutableListOf<Double>()
+    var prv = values.first()
+    result.add(prv)
+
+    for (i in 1 until values.size) {
+        prv += (values[i] - prv) * multiplier
+        result.add(prv)
+    }
+    return result
+}
 /**
  * Relative Strength Index (14‑period by default).
  * Returns null if data insufficient.
@@ -58,39 +71,24 @@ fun List<Kline>.rsi(period: Int = 14): Double? {
  * Returns null when data is insufficient.
  */
 data class MACDResult(
-    val macdLine: Double,
-    val signalLine: Double,
-    val histogram: Double
+    val diff: Double,
+    val dea: Double,
+    val hist: Double
 )
 
 fun List<Kline>.macd(
     fastPeriod: Int = 12,
     slowPeriod: Int = 26,
     signalPeriod: Int = 9
-): MACDResult? {
-    val fastEma = ema(fastPeriod)
-    val slowEma = ema(slowPeriod)
-    val macdLine = fastEma - slowEma
-
-    // Manual calculation of signal line EMA on the MACD line
-    // Here we approximate: we need historical MACD values, so we compute for each index.
-    // For simplicity, we recompute; in production cache intermediate results.
-    val macdHistory = mutableListOf<Double>()
-    for (i in slowPeriod - 1 until size) {
-        val sublist = take(i + 1)
-        val fast = sublist.ema(fastPeriod)
-        val slow = sublist.ema(slowPeriod)
-        macdHistory.add(fast - slow)
-    }
-    if (macdHistory.size < signalPeriod) return null
-
-    // Real EMA-based signal line:
-    val alpha = 2.0 / (signalPeriod + 1)
-    var signalEma = macdHistory.take(signalPeriod).average()
-    for (i in signalPeriod until macdHistory.size) {
-        signalEma += (macdHistory[i] - signalEma) * alpha
-    }
-    return MACDResult(macdLine, signalEma, macdLine - signalEma)
+): MACDResult {
+    require(size >= slowPeriod) {"Not enough data"}
+    val closes = this.map { it.close }
+    val fastEma = ema0(closes, fastPeriod)
+    val slowEma = ema0(closes, slowPeriod)
+    val diff = fastEma.zip(slowEma) { f, s -> f - s }
+    val dea = ema0(diff, signalPeriod)
+    val hist = diff.zip(dea) {d, s -> d - s}
+    return MACDResult(diff = diff.last(), dea = dea.last(), hist = hist.last())
 }
 
 
@@ -122,19 +120,19 @@ class SmaCrossoverStrategy(
  * MACD crossover: signal line crossover.
  */
 class MacdCrossoverStrategy(
-    private val fast: Int = 12,
-    private val slow: Int = 26,
-    private val signal: Int = 9
+    private val fast: Int = 50,
+    private val slow: Int = 100,
+    private val signal: Int = 24
 ) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
         // Need two MACD results to detect crossover
         if (klines.size < slow + signal) return Prediction.Neutral
-        val current = klines.macd(fast, slow, signal) ?: return Prediction.Neutral
-        val previous = klines.dropLast(1).macd(fast, slow, signal) ?: return Prediction.Neutral
+        val current = klines.macd(fast, slow, signal)
+        val previous = klines.dropLast(1).macd(fast, slow, signal)
         return when {
-            current.macdLine > current.signalLine && previous.macdLine <= previous.signalLine ->
+            current.diff > previous.diff && current.diff > current.dea ->
                 Prediction.Buy(0.8)
-            current.macdLine < current.signalLine && previous.macdLine >= previous.signalLine ->
+            current.diff < previous.diff && current.diff < current.dea ->
                 Prediction.Sell(0.8)
             else -> Prediction.Neutral
         }
