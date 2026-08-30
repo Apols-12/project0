@@ -128,11 +128,11 @@ class MacdCrossoverStrategy(
         // Need two MACD results to detect crossover
         if (klines.size < slow + signal) return Prediction.Neutral
         val current = klines.macd(fast, slow, signal)
-        val previous = klines.dropLast(1).macd(fast, slow, signal)
+
         return when {
-            current.diff > previous.diff && current.dea > previous.dea   ->
+            current.diff > current.dea   ->
                 Prediction.Buy(0.8)
-            current.diff < previous.diff && current.dea < previous.dea ->
+            current.diff < current.dea ->
                 Prediction.Sell(0.8)
             else -> Prediction.Neutral
         }
