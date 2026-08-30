@@ -108,13 +108,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             }
 
             is Prediction.Neutral -> {
-                if (hasOpenPosition) {
-                    coreFeature.closeOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
-                }
-                canEnterLongPosition[config.botName] = true
-                canEnterShortPosition[config.botName] = true
                 logger.info("No Signal, waiting.......................................................")
-                logger.info("Closing open position.......................................................")
             }
         }
     }

@@ -17,7 +17,7 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
+
 
 class BotManager(private val service: BotService) {
     private val activeBots = ConcurrentHashMap<String, Job>()
@@ -59,6 +59,7 @@ class BotManager(private val service: BotService) {
         activeBots[userId]?.let {
             it.cancel("User Requested Stop")
             service.canEnterShortPosition.remove(userId)
+            service.canEnterLongPosition.remove(userId)
             activeBots.remove(userId)
             logger.info("Bot stop successfully")
             // We can also notify the user after that

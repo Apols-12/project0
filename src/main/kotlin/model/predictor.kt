@@ -130,9 +130,9 @@ class MacdCrossoverStrategy(
         val current = klines.macd(fast, slow, signal)
         val previous = klines.dropLast(1).macd(fast, slow, signal)
         return when {
-            current.hist > previous.hist  ->
+            current.diff > previous.diff && current.dea > previous.dea   ->
                 Prediction.Buy(0.8)
-            current.hist < previous.hist ->
+            current.diff < previous.diff && current.dea < previous.dea ->
                 Prediction.Sell(0.8)
             else -> Prediction.Neutral
         }
