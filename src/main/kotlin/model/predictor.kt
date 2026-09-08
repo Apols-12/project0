@@ -159,7 +159,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             symbol = config.symbol,
             interval = config.interval,
             limit = 1000
-        )
+        ).dropLast(1)
         return predict(klines)
     }
 
