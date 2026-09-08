@@ -12,7 +12,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
     suspend fun start(config: BotConfig) {
 
         val predictorConfig = EngineConfig(
-            strategy = MacdCrossoverStrategy(fast = config.fast, slow = config.slow, signal = config.signal),
+            strategy = SmaCrossoverStrategy(shortPeriod = config.fast, longPeriod = config.slow),
             minRequiredSignals = 1,
             threshold = 0.5
         )
