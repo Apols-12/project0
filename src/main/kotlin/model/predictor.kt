@@ -152,7 +152,7 @@ data class EngineConfig(
 class PredictionEngine(private val engineConfig: EngineConfig) {
     private val logger = KotlinLogging.logger("predictor")
 
-    suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
+/*    suspend fun prediction(config: BotConfig, networkService: NetworkService): Prediction {
 
         val klines = networkService.getKline(
             baseUrl = "https://api.bybit.com/v5/market/kline",
@@ -161,7 +161,7 @@ class PredictionEngine(private val engineConfig: EngineConfig) {
             limit = 1000
         ).dropLast(1)
         return predict(klines)
-    }
+    }*/
 
     /**
      * Process a time-sorted list of _root_ide_package_.org.example.Kline and return the aggregated prediction.

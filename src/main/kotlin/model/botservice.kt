@@ -10,22 +10,23 @@ class BotService(private val networkService: NetworkService, private val coreFea
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig) {
-<<<<<<< HEAD
         val klines = networkService.getKline(
             baseUrl = "https://api.bybit.com/v5/market/kline",
             symbol = config.symbol,
             interval = config.interval,
             limit = 1000
-=======
+        ).dropLast(1)
 
         val predictorConfig = EngineConfig(
-            strategy = SmaCrossoverStrategy(shortPeriod = config.fast, longPeriod = config.slow),
+            strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
             minRequiredSignals = 1,
             threshold = 0.5
->>>>>>> 89c82f1071e3a1a37bc48c843ba0393134ca1c17
         )
 
-        val prediction = coreFeature.prediction(klines)
+        val predictor = PredictionEngine(predictorConfig)
+
+//        val prediction = coreFeature.prediction(klines)
+        val prediction = predictor.predict(klines)
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
         logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
