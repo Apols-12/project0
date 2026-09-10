@@ -249,6 +249,7 @@ fun main() {
         }
         monitor.subscribe(ApplicationStopping) {
             background.stop()
+            coreFeature.model.close()
         }
     }.start(wait = true)
 }
