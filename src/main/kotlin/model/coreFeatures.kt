@@ -19,10 +19,16 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import org.jetbrains.kotlinx.dl.api.inference.TensorFlowInferenceModel
+import java.io.File
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.let
+import kotlin.math.max
+import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.seconds
 
 private val RECV_WINDOW = "5000"
@@ -32,6 +38,7 @@ private val BYBIT_TESTNET = "https://api-demo.bybit.com"
 
 class CoreFeature(private val httpClient: HttpClient) {
     private val logger = KotlinLogging.logger("Place_Order")
+    private val model = TensorFlowInferenceModel.load(File("models\\scalper_max"))
 
     @Serializable
     data class BybitResponse<T>(
@@ -440,14 +447,222 @@ class CoreFeature(private val httpClient: HttpClient) {
         }
     }
 
-    //This is how to load a KotlinDl model to make prediction
-/*    fun predict(data: FloatArray): Int {
-        var prediction: Int
-        TensorFlowInferenceModel.load(File("src/main/resources/monster0"))
-            .use {
-                it.reshape(20, 4)
-                prediction = it.predict(data)
+
+    data class FeatureRow(
+        val timestamp: Long,
+        val features: DoubleArray,
+        val label: Int
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as FeatureRow
+
+            if (timestamp != other.timestamp) return false
+            if (label != other.label) return false
+            if (!features.contentEquals(other.features)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = timestamp.hashCode()
+            result = 31 * result + label
+            result = 31 * result + features.contentHashCode()
+            return result
+        }
+    }
+
+    // ---------- Technical indicators ----------
+    fun computeSMA(prices: DoubleArray, period: Int): DoubleArray {
+        val sma = DoubleArray(prices.size) { Double.NaN }
+        for (i in period - 1 until prices.size) {
+            var sum = 0.0
+            for (j in i - period + 1..i) sum += prices[j]
+            sma[i] = sum / period
+        }
+        return sma
+    }
+
+    fun computeEMA(prices: DoubleArray, period: Int): DoubleArray {
+        val ema = DoubleArray(prices.size) { Double.NaN }
+        if (prices.size < period) return ema
+        val multiplier = 2.0 / (period + 1)
+        ema[period - 1] = prices.take(period).average()
+        for (i in period until prices.size) {
+            ema[i] = (prices[i] - ema[i - 1]) * multiplier + ema[i - 1]
+        }
+        return ema
+    }
+
+    fun computeRSI(prices: DoubleArray, period: Int = 14): DoubleArray {
+        val rsi = DoubleArray(prices.size) { Double.NaN }
+        if (prices.size <= period) return rsi
+
+        var avgGain = 0.0
+        var avgLoss = 0.0
+        for (i in 1..period) {
+            val diff = prices[i] - prices[i - 1]
+            if (diff >= 0) avgGain += diff else avgLoss -= diff
+        }
+        avgGain /= period
+        avgLoss /= period
+        rsi[period] = if (avgLoss == 0.0) 100.0 else 100.0 - 100.0 / (1 + avgGain / avgLoss)
+
+        for (i in period + 1 until prices.size) {
+            val diff = prices[i] - prices[i - 1]
+            val gain = max(diff, 0.0)
+            val loss = max(-diff, 0.0)
+            avgGain = (avgGain * (period - 1) + gain) / period
+            avgLoss = (avgLoss * (period - 1) + loss) / period
+            rsi[i] = if (avgLoss == 0.0) 100.0 else 100.0 - 100.0 / (1 + avgGain / avgLoss)
+        }
+        return rsi
+    }
+
+    // ---------- Feature engineering ----------
+    fun createFeatures(candles: List<Kline>): List<FeatureRow> {
+        val closes = candles.map { it.close }.toDoubleArray()
+        val volumes = candles.map { it.volume }.toDoubleArray()
+        val highs = candles.map { it.high }.toDoubleArray()
+        val lows = candles.map { it.low }.toDoubleArray()
+
+        val sma5 = computeSMA(closes, 5)
+        val sma20 = computeSMA(closes, 20)
+        val ema4 = computeEMA(closes, 4)
+        val ema5 = computeEMA(closes, 5)
+        val ema6 = computeEMA(closes, 6)
+        val ema7 = computeEMA(closes, 7)
+        val ema8 = computeEMA(closes, 8)
+        val ema9 = computeEMA(closes, 9)
+        val ema10 = computeEMA(closes, 10)
+        val ema11 = computeEMA(closes, 11)
+        val ema12 = computeEMA(closes, 12)
+        val ema13 = computeEMA(closes, 13)
+        val ema14 = computeEMA(closes, 14)
+        val ema15 = computeEMA(closes, 15)
+        val rsi = computeRSI(closes, 14)
+
+        val futureSteps = 3
+        val threshold = 0.5
+
+        val featureRows = mutableListOf<FeatureRow>()
+        val start = maxOf(26, 14, 20, 5) // slowest indicator
+
+        for (i in start until candles.size - futureSteps) {
+            val features = doubleArrayOf(
+                (closes[i] - closes[i - 1]) / closes[i - 1],
+                (closes[i] - closes[i - 3]) / closes[i - 3],
+                (closes[i] - closes[i - 7]) / closes[i - 7],
+                (closes[i] - closes[i - 14]) / closes[i - 14],
+                (closes[i] - sma5[i]) / closes[i],
+                (closes[i] - sma20[i]) / closes[i],
+                (closes[i] - ema4[i]) / closes[i],
+                (closes[i] - ema5[i]) / closes[i],
+                (closes[i] - ema6[i]) / closes[i],
+                (closes[i] - ema7[i]) / closes[i],
+                (closes[i] - ema8[i]) / closes[i],
+                (closes[i] - ema9[i]) / closes[i],
+                (closes[i] - ema10[i]) / closes[i],
+                (closes[i] - ema11[i]) / closes[i],
+                (closes[i] - ema12[i]) / closes[i],
+                (closes[i] - ema13[i]) / closes[i],
+                (closes[i] - ema14[i]) / closes[i],
+                (rsi[i] - 50.0) / 50.0,
+                (volumes[i] - volumes[i - 1]) / volumes[i - 1],
+                (volumes[i] - volumes[i - 5]) / volumes[i - 5],
+                (highs[i] - lows[i]) / closes[i]
+            )
+
+//        val label = if (ema4[i] - ema14[i] > threshold) 1 else 0
+            val diff = ((ema4[i] - ema9[i]) * 0.5 + (ema4[i] - ema10[i]) * 0.5 + (ema4[i] - ema12[i]) * 0.5 + (ema4[i] - ema13[i]) * 0.5 + (ema4[i] - ema14[i]) * 0.5) / 5
+            val label = if (diff > threshold) 1 else 0
+            featureRows.add(FeatureRow(candles[i].time, features, label))
+        }
+        return featureRows
+    }
+
+    // ---------- Prepare sequences for Conv1D ----------
+    data class SequenceData(
+        val x: Array<FloatArray>, // [batch, timeSteps, features]
+        val y: FloatArray               // [batch]
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as SequenceData
+
+            if (!x.contentDeepEquals(other.x)) return false
+            if (!y.contentEquals(other.y)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = x.contentDeepHashCode()
+            result = 31 * result + y.contentHashCode()
+            return result
+        }
+    }
+
+
+    // ---------- Normalization (Z-score per feature) ----------
+    class StandardScaler {
+        var mean: FloatArray? = null
+        var std: FloatArray? = null
+
+        fun fit(featureMatrix: List<FloatArray>) {
+            val nFeatures = featureMatrix[0].size
+            mean = FloatArray(nFeatures)
+            std = FloatArray(nFeatures)
+
+            for (j in 0 until nFeatures) {
+                val col = featureMatrix.map { it[j] }
+                mean!![j] = col.average().toFloat()
+                std!![j] = sqrt(col.map { (it - mean!![j]).pow(2) }.average().toFloat())
+                if (std!![j] == 0.0f) std!![j] = 1.0f
             }
-        return prediction
-    }*/
+        }
+
+        fun transform(seq: Array<FloatArray>): Array<FloatArray> {
+            require(mean != null && std != null) { "Scaler not fitted" }
+            return seq.map { row ->
+                FloatArray(row.size) { j ->
+                    ((row[j] - mean!![j]) / std!![j])
+                }
+            }.toTypedArray()
+        }
+    }
+
+    private fun processData(data: List<Kline>): FloatArray {
+        val featureRows = createFeatures(data)
+
+        val dataX = featureRows.asSequence().map { it.features.map { t -> t.toFloat() } }.windowed(10, 1).map { it.flatten() }.map { it.toFloatArray() }
+            .toList().toTypedArray()
+
+        val scaler = StandardScaler()
+        scaler.fit(dataX.toList())
+
+        // Transform for prediction
+        return scaler.transform(dataX).toList().takeLast(1).single()
+    }
+
+    private fun predict(data: FloatArray): Int {
+        model.let {
+            it.reshape(10L, 21L)
+            return it.predict(data)
+        }
+    }
+
+    fun prediction(klines: List<Kline>): Prediction {
+        val data = processData(klines)
+        val prediction =  predict(data)
+        return when(prediction) {
+             1 -> Prediction.Buy()
+             0 -> Prediction.Sell()
+            else -> Prediction.Neutral
+        }
+    }
 }

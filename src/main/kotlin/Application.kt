@@ -150,7 +150,7 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
-                                        tpPercent = 0.07,
+                                        tpPercent = 0.02,
                                         slPercent = 0.05,
                                         leverage = 5,
                                         qty = "3",

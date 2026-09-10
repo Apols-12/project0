@@ -16,6 +16,7 @@ import mu.KotlinLogging
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class BotManager(private val service: BotService) {
@@ -40,7 +41,7 @@ class BotManager(private val service: BotService) {
                 while (isActive) {
                     try {
                         service.start(config)
-                        delay(5.seconds)
+                        delay(30.seconds)
                     } catch (e: CancellationException) {
                         // We will create a function to notify the user about this event
                         logger.info("[${config.botName}] Bot stopped gracefully")

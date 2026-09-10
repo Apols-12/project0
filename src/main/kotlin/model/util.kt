@@ -42,7 +42,7 @@ data class KlineResult(
  * Validated during construction to guarantee OHLC integrity.
  */
 data class Kline(
-    val time: String,
+    val time: Long,
     val open: Double,
     val high: Double,
     val low: Double,
@@ -71,9 +71,8 @@ data class BotConfig(
     val leverage: Int,
     val tpPercent: Double,
     val slPercent: Double,
-    val fast: Int = 50,
-    val slow: Int = 100,
-    val signal: Int = 24,
+    val shortPeriod: Int = 9,
+    val longPeriod: Int = 26,
     val apiKey: String,
     val secretKey: String,
     val interval: String = "15",
@@ -159,7 +158,7 @@ class NetworkService(private val client: HttpClient) {
         if (kline.retCode != 0) throw  Exception("API error: ${kline.retMsg}")
         val result =  kline.result.list.map { item ->
             Kline(
-                time = format(item[0].toLong()),
+                time = item[0].toLong(),
                 open = item[1],
                 high = item[2],
                 low = item[3],
