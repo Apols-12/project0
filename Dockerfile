@@ -15,6 +15,7 @@ FROM mosipdev/openjdk-21-jdk
 WORKDIR /app
 
 COPY image.jpg .
+COPY models ./models
 COPY src ./src
 COPY --from=build /app/build/libs/myaws-all.jar .
 EXPOSE 5000
