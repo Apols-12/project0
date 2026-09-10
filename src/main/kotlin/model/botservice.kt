@@ -10,11 +10,19 @@ class BotService(private val networkService: NetworkService, private val coreFea
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig) {
+<<<<<<< HEAD
         val klines = networkService.getKline(
             baseUrl = "https://api.bybit.com/v5/market/kline",
             symbol = config.symbol,
             interval = config.interval,
             limit = 1000
+=======
+
+        val predictorConfig = EngineConfig(
+            strategy = SmaCrossoverStrategy(shortPeriod = config.fast, longPeriod = config.slow),
+            minRequiredSignals = 1,
+            threshold = 0.5
+>>>>>>> 89c82f1071e3a1a37bc48c843ba0393134ca1c17
         )
 
         val prediction = coreFeature.prediction(klines)
