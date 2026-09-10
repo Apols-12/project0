@@ -38,7 +38,7 @@ private val BYBIT_TESTNET = "https://api-demo.bybit.com"
 
 class CoreFeature(private val httpClient: HttpClient) {
     private val logger = KotlinLogging.logger("Place_Order")
-    val model = TensorFlowInferenceModel.load(File("models\\scalper_max"))
+    val model = TensorFlowInferenceModel.load(File("models/scalper_max"))
 
     @Serializable
     data class BybitResponse<T>(
