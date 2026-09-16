@@ -15,7 +15,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             symbol = config.symbol,
             interval = config.interval,
             limit = 1000
-        ).dropLast(1)
+        )
 
         val predictorConfig = EngineConfig(
             strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
@@ -25,8 +25,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictor = PredictionEngine(predictorConfig)
 
-//        val prediction = coreFeature.prediction(klines)
-        val prediction = predictor.predict(klines)
+        val prediction = coreFeature.prediction(klines)
+//        val prediction = predictor.predict(klines)
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
         logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
