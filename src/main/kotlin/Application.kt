@@ -154,8 +154,8 @@ fun main() {
                                         slPercent = 0.05,
                                         leverage = 5,
                                         qty = "3",
-                                        apiKey = "TZEk4Xr0lDoZunZPg6",
-                                        secretKey = "qiAJjxhWsoqDJ3pGWn9rZ1pbtVJ8cywadXlW",
+                                        apiKey = "zsWR8hByEOM4xcqKJy",
+                                        secretKey = "3cJsihHKkMMFsHtDiKJDAHqYB0k13NrCA81b",
                                         overTrade = false,
                                         demo = true
                                     )
