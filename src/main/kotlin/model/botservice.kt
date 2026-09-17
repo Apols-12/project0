@@ -15,7 +15,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             symbol = config.symbol,
             interval = config.interval,
             limit = 1000
-        )
+        ).dropLast(1)
 
         val predictorConfig = EngineConfig(
             strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
