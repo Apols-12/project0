@@ -76,6 +76,7 @@ data class BotConfig(
     val apiKey: String,
     val secretKey: String,
     val interval: String = "15",
+    val useMl : Boolean = false,
     val overTrade: Boolean,
     val demo: Boolean
 )
