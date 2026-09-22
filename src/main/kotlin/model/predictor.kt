@@ -21,7 +21,7 @@ fun List<Kline>.ema(period: Int): Double {
     require (isNotEmpty() || size > period)
     val alpha = 2.0 / (period + 1)
     // seed with SMA of first `period` elements
-    var ema = take(period).map { it.close }.average()
+    var ema = takeLast(period).map { it.close }.average()
     for (i in period until size) {
         ema += (this[i].close - ema) * alpha
     }
