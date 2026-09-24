@@ -210,9 +210,9 @@ fun main() {
                             }
                         }
                     }) {
-                        val id = call.parameters["bot-name"]
+                        val id = call.parameters["bot-name"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                         if (botService.botStatus.keys.contains(id)) {
-                            botService.stopBot(id!!)
+                            botService.stopBot(id)
                             call.respondText("Boot stoped successfully", status = HttpStatusCode.OK)
                             log.info("$id bot stoped successfully")
                         } else {
