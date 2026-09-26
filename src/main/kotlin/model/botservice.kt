@@ -17,6 +17,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
             limit = 1000
         )
 
+        logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
         val predictorConfig = EngineConfig(
             strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
             minRequiredSignals = 1,
@@ -25,7 +26,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         val predictor = PredictionEngine(predictorConfig)
 
-        val prediction =  predictor.predict(klines)
+        val prediction =  if (config.useMl) coreFeature.prediction(klines.dropLast(1)) else predictor.predict(klines.dropLast(1))
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
         logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
@@ -49,6 +50,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             category = config.category,
                             useDemo = config.demo
                         )
+                        canEnterLongPosition[config.botName] = config.overTrade
+                        canEnterShortPosition[config.botName] = true
                     } else {
                         logger.info("Already in Long position")
                         canEnterLongPosition[config.botName] = config.overTrade
@@ -89,6 +92,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             category = config.category,
                             useDemo = config.demo
                         )
+                        canEnterShortPosition[config.botName] = config.overTrade
+                        canEnterLongPosition[config.botName] = true
                     } else {
                         canEnterShortPosition[config.botName] = config.overTrade
                         canEnterLongPosition[config.botName] = true

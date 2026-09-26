@@ -105,12 +105,13 @@ class SmaCrossoverStrategy(
     private val longPeriod: Int = 50
 ) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
-        val shortSma = klines.ema(shortPeriod)
-        val longSma = klines.ema(longPeriod)
-
+        val closes = klines.map { it.close }
+        val shortSma = ema0(closes, shortPeriod)
+        val longSma = ema0(closes, longPeriod)
+        val diff = shortSma.zip(longSma) {s, l -> s - l }.takeLast(1).first()
         return when {
-            shortSma > longSma  -> Prediction.Buy(0.7)
-            shortSma < longSma -> Prediction.Sell(0.7)
+           diff > 0.0  -> Prediction.Buy(0.7)
+            diff < 0.0 -> Prediction.Sell(0.7)
             else -> Prediction.Neutral
         }
     }
