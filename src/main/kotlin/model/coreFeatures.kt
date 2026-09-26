@@ -449,7 +449,7 @@ class CoreFeature(private val httpClient: HttpClient) {
 
 
     data class FeatureRow(
-        val timestamp: String,
+        val timestamp: Long,
         val features: DoubleArray,
         val label: Int
     ) {

@@ -42,7 +42,7 @@ data class KlineResult(
  * Validated during construction to guarantee OHLC integrity.
  */
 data class Kline(
-    val time: String,
+    val time: Long,
     val open: Double,
     val high: Double,
     val low: Double,
@@ -159,7 +159,7 @@ class NetworkService(private val client: HttpClient) {
         if (kline.retCode != 0) throw  Exception("API error: ${kline.retMsg}")
         val result =  kline.result.list.map { item ->
             Kline(
-                time = item[0].toString(),
+                time = item[0].toLong(),
                 open = item[1],
                 high = item[2],
                 low = item[3],
@@ -167,7 +167,7 @@ class NetworkService(private val client: HttpClient) {
                 volume = item[5]
             )
         }
-        return result
+        return result.sortedBy { it.time }.distinct()
     }
 }
 
