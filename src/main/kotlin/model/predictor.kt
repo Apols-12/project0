@@ -108,7 +108,7 @@ class SmaCrossoverStrategy(
         val closes = klines.map { it.close }
         val shortSma = ema0(closes, shortPeriod)
         val longSma = ema0(closes, longPeriod)
-        val diff = shortSma.zip(longSma) {s, l -> s - l }.takeLast(1).first()
+        val diff = shortSma.zip(longSma) {s, l -> s - l }.take(1).first()
         return when {
            diff > 0.0  -> Prediction.Buy(0.7)
             diff < 0.0 -> Prediction.Sell(0.7)
