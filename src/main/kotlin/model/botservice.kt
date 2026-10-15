@@ -19,14 +19,14 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
         val predictorConfig = EngineConfig(
-            strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
+            strategy = ChangeStrategy(step = config.step),
             minRequiredSignals = 1,
             threshold = 0.5
         )
 
         val predictor = PredictionEngine(predictorConfig)
 
-        val prediction =  if (config.useMl) coreFeature.prediction(klines.dropLast(1)) else predictor.predict(klines.dropLast(1))
+        val prediction =  if (config.useMl) coreFeature.prediction(klines.dropLast(1)) else predictor.predict(klines)
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
         logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")

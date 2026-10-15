@@ -140,6 +140,19 @@ class MacdCrossoverStrategy(
     }
 }
 
+class ChangeStrategy(private val step: Int) : PredictionStrategy {
+    override fun predict(klines: List<Kline>): Prediction {
+        val changes = klines.mapIndexed { index, kline ->
+            val prevClose = if (index > 0) klines[index - 1].close else kline.close
+            klines[index].close - prevClose
+        }
+
+        val change = changes.takeLast(step).sum()
+
+        return if (change > 0.0)  Prediction.Buy(0.9) else Prediction.Sell(0.9)
+    }
+}
+
 
 /**
  * Configuration for the engine and its strategies.
