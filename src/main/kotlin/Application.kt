@@ -243,13 +243,18 @@ fun main() {
                 call.respondText("The bot api is running, only me can access it", status = HttpStatusCode.OK)
             }
 
+            get("/stop-all-bots") {
+                botService.stopAllBots()
+                call.respondText("All bots stopped successfully", status = HttpStatusCode.OK)
+            }
+
             get("/health") {
                 call.respond(HttpStatusCode.OK)
             }
         }
         monitor.subscribe(ApplicationStopping) {
             background.stop()
-            coreFeature.model.close()
+            botService.stopAllBots()
         }
     }.start(wait = true)
 }
