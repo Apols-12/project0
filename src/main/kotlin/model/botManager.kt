@@ -66,8 +66,8 @@ class BotManager(private val service: BotService) {
         }
     }
 
-//    fun stopAllBots() {
-//        scope.cancel("System ShutDown")
-//        // We can notify users about these events too
-//    }
+    fun stopAllBots() {
+        scope.cancel("Closing all bots")
+        // We can notify users about these events too
+    }
 }

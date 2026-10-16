@@ -38,7 +38,7 @@ private val BYBIT_TESTNET = "https://api-demo.bybit.com"
 
 class CoreFeature(private val httpClient: HttpClient) {
     private val logger = KotlinLogging.logger("Place_Order")
-    val model = TensorFlowInferenceModel.load(File("models/scalper_101"))
+//    val model = TensorFlowInferenceModel.load(File("models/scalper_101"))
 
     @Serializable
     data class BybitResponse<T>(
@@ -649,20 +649,20 @@ class CoreFeature(private val httpClient: HttpClient) {
         return scaler.transform(dataX).toList().takeLast(1).single()
     }
 
-    private fun predict(data: FloatArray): Int {
-        model.let {
-            it.reshape(10L, 21L)
-            return it.predict(data)
-        }
-    }
+//    private fun predict(data: FloatArray): Int {
+//        model.let {
+//            it.reshape(10L, 21L)
+//            return it.predict(data)
+//        }
+//    }
 
-    fun prediction(klines: List<Kline>): Prediction {
-        val data = processData(klines)
-        val prediction =  predict(data)
-        return when(prediction) {
-             1 -> Prediction.Buy()
-             0 -> Prediction.Sell()
-            else -> Prediction.Neutral
-        }
-    }
+//    fun prediction(klines: List<Kline>): Prediction {
+//        val data = processData(klines)
+//        val prediction =  predict(data)
+//        return when(prediction) {
+//             1 -> Prediction.Buy()
+//             0 -> Prediction.Sell()
+//            else -> Prediction.Neutral
+//        }
+//    }
 }
