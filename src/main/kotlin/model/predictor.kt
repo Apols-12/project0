@@ -101,8 +101,8 @@ interface PredictionStrategy {
  * SMA crossover strategy: short SMA vs long SMA.
  */
 class SmaCrossoverStrategy(
-    private val shortPeriod: Int = 20,
-    private val longPeriod: Int = 50
+    private val shortPeriod: Int = 4,
+    private val longPeriod: Int = 7
 ) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
 
@@ -143,8 +143,8 @@ class MacdCrossoverStrategy(
 class ChangeStrategy(private val step: Int) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
         val changes = klines.mapIndexed { index, kline ->
-            val prevClose = if (index > 0) klines[index - 1].close else kline.close
-            klines[index].close - prevClose
+            val prevOpen = if (index > 0) klines[index - 1].open else kline.open
+            klines[index].open - prevOpen
         }
 
         val change = changes.takeLast(step).sum()

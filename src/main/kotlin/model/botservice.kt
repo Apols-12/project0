@@ -19,7 +19,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
         val predictorConfig = EngineConfig(
-            strategy = ChangeStrategy(step = config.step),
+            strategy = SmaCrossoverStrategy(shortPeriod = config.shortPeriod, longPeriod = config.longPeriod),
             minRequiredSignals = 1,
             threshold = 0.5
         )
