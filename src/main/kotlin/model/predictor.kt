@@ -147,9 +147,16 @@ class ChangeStrategy(private val step: Int) : PredictionStrategy {
             klines[index].open - prevOpen
         }
 
+        val kline = klines.takeLast(1).single()
+        val isUp = kline.open >= kline.low && kline.open <= kline.high
+        val isDown = kline.open <= kline.high && kline.open >= kline.low
         val change = changes.takeLast(step).sum()
 
-        return if (change > 0.0)  Prediction.Buy(0.9) else Prediction.Sell(0.9)
+        return when {
+            change > 0.0 && isUp -> Prediction.Buy(0.7)
+            change < 0.0 && isDown -> Prediction.Sell(0.7)
+            else -> Prediction.Neutral
+        }
     }
 }
 
