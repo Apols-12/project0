@@ -73,7 +73,6 @@ data class BotConfig(
     val slPercent: Double,
     val shortPeriod: Int = 9,
     val longPeriod: Int = 26,
-    val step: Int = 2,
     val apiKey: String,
     val secretKey: String,
     val interval: String = "15",

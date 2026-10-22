@@ -100,7 +100,7 @@ interface PredictionStrategy {
 /**
  * SMA crossover strategy: short SMA vs long SMA.
  */
-class SmaCrossoverStrategy(
+class EmaCrossoverStrategy(
     private val shortPeriod: Int = 4,
     private val longPeriod: Int = 7
 ) : PredictionStrategy {
@@ -140,21 +140,17 @@ class MacdCrossoverStrategy(
     }
 }
 
-class ChangeStrategy(private val step: Int) : PredictionStrategy {
+class MixedStrategy(private val shortPeriod: Int, private val longPeriod: Int) : PredictionStrategy {
     override fun predict(klines: List<Kline>): Prediction {
-        val changes = klines.mapIndexed { index, kline ->
-            val prevOpen = if (index > 0) klines[index - 1].open else kline.open
-            klines[index].open - prevOpen
-        }
-
         val kline = klines.takeLast(1).single()
         val isUp = kline.open >= kline.low && kline.open <= kline.high
         val isDown = kline.open <= kline.high && kline.open >= kline.low
-        val change = changes.takeLast(step).sum()
+        val longEma = klines.ema(longPeriod)
+        val shortEma = klines.ema(shortPeriod)
 
         return when {
-            change > 0.0 && isUp -> Prediction.Buy(0.7)
-            change < 0.0 && isDown -> Prediction.Sell(0.7)
+            shortEma > longEma && isUp -> Prediction.Buy(0.7)
+            shortEma < longEma && isDown -> Prediction.Sell(0.7)
             else -> Prediction.Neutral
         }
     }
