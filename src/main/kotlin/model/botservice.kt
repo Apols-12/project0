@@ -18,23 +18,20 @@ class BotService(private val networkService: NetworkService, private val coreFea
         )
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
-        val predictorConfig = EngineConfig(
-            strategy = EmaCrossoverStrategy(longPeriod = config.longPeriod, shortPeriod = config.shortPeriod),
-            minRequiredSignals = 1,
-            threshold = 0.5
-        )
 
-        val predictor = PredictionEngine(predictorConfig)
+        val predictor = SignalEngine()
 
         val prediction =  predictor.predict(klines)
+
+        logger.info("Prediction is: $prediction")
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
         logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         val position = coreFeature.getOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo).firstOrNull()
-        when(prediction) {
-            is Prediction.Buy -> {
+        when(prediction.direction) {
+            Direction.LONG -> {
                 if (hasOpenPosition) {
                     if (position!!.side != "Buy") {
                         logger.info("Signal is Buy, closing Short and opening Long position")
@@ -76,7 +73,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 }
             }
 
-            is Prediction.Sell -> {
+            Direction.SHORT -> {
                 if (hasOpenPosition) {
                     if (position!!.side != "Sell") {
                         logger.info("Signal is Sell, closing Long and opening Short position________++++++++++_________++++++++______")
@@ -118,7 +115,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
                 }
             }
 
-            is Prediction.Neutral -> {
+            Direction.NEUTRAL -> {
                 logger.info("No Signal, waiting.......................................................")
             }
         }

@@ -37,25 +37,6 @@ data class KlineResult(
     val list: List<List<Double>>
 )
 
-/**
- * Immutable representation of a single Kline / candlestick.
- * Validated during construction to guarantee OHLC integrity.
- */
-data class Kline(
-    val time: Long,
-    val open: Double,
-    val high: Double,
-    val low: Double,
-    val close: Double,
-    val volume: Double
-) {
-    init {
-        require(high >= open && high >= close) { "High must be >= open and close" }
-        require(low <= open && low <= close) { "Low must be <= open and close" }
-        require(volume >= 0) { "Volume must be non-negative" }
-    }
-}
-
 
 @Serializable
 data class BotStat(
@@ -71,8 +52,8 @@ data class BotConfig(
     val leverage: Int,
     val tpPercent: Double,
     val slPercent: Double,
-    val shortPeriod: Int = 9,
-    val longPeriod: Int = 26,
+    val signalConfig: SignalConfig = SignalConfig(),
+    val feeModel: FeeModel = FeeModel(),
     val apiKey: String,
     val secretKey: String,
     val interval: String = "15",
@@ -159,7 +140,7 @@ class NetworkService(private val client: HttpClient) {
         if (kline.retCode != 0) throw  Exception("API error: ${kline.retMsg}")
         val result =  kline.result.list.map { item ->
             Kline(
-                time = item[0].toLong(),
+                openTime = item[0].toLong(),
                 open = item[1],
                 high = item[2],
                 low = item[3],
@@ -167,7 +148,7 @@ class NetworkService(private val client: HttpClient) {
                 volume = item[5]
             )
         }
-        return result.sortedBy { it.time }.distinct()
+        return result.sortedBy { it.openTime }.distinct()
     }
 }
 

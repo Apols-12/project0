@@ -17,6 +17,9 @@ repositories {
     maven("https://packages.jetbrains.team/maven/p/kds/kotlin-ds-maven")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
 dependencies {
     implementation(libs.ktor.server.html.builder)
     implementation(libs.kotlinx.html)

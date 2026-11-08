@@ -578,7 +578,7 @@ class CoreFeature(private val httpClient: HttpClient) {
 //        val label = if (ema4[i] - ema14[i] > threshold) 1 else 0
             val diff = ((ema4[i] - ema9[i]) * 0.5 + (ema4[i] - ema10[i]) * 0.5 + (ema4[i] - ema12[i]) * 0.5 + (ema4[i] - ema13[i]) * 0.5 + (ema4[i] - ema14[i]) * 0.5) / 5
             val label = if (diff > threshold) 1 else 0
-            featureRows.add(FeatureRow(candles[i].time, features, label))
+            featureRows.add(FeatureRow(candles[i].openTime, features, label))
         }
         return featureRows
     }
