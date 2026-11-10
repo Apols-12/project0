@@ -58,8 +58,6 @@ class BotManager(private val service: BotService) {
     fun stopBot(userId: String) {
         activeBots[userId]?.let {
             it.cancel("User Requested Stop")
-            service.canEnterShortPosition.remove(userId)
-            service.canEnterLongPosition.remove(userId)
             activeBots.remove(userId)
             logger.info("Bot stop successfully")
             // We can also notify the user after that

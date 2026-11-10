@@ -3,10 +3,6 @@ package com.apols.model
 import mu.KotlinLogging
 
 class BotService(private val networkService: NetworkService, private val coreFeature: CoreFeature) {
-
-    val canEnterLongPosition = mutableMapOf<String, Boolean>()
-    val canEnterShortPosition = mutableMapOf<String, Boolean>()
-
     private val logger = KotlinLogging.logger("Prediction")
 
     suspend fun start(config: BotConfig) {
@@ -19,14 +15,14 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
 
-        val predictor = SignalEngine()
+        val predictor = SignalEngine(cfg = config.signalConfig, fees = config.feeModel)
 
         val prediction =  predictor.predict(klines)
 
         logger.info("Prediction is: $prediction")
+        logger.info("Prediction strength: ${prediction.strength}, Stop price: ${prediction.stopPrice}, targeted price is: ${prediction.targetPrice}")
 
-        logger.info("The smoothed Model prediction for user ${config.botName} is: $prediction")
-        logger.info("can enter long ${canEnterLongPosition[config.botName]}, can enter short ${canEnterShortPosition[config.botName]}")
+        logger.info("The smoothed Model prediction for user ${config.botName} is: ${prediction.direction.name}")
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         val position = coreFeature.getOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo).firstOrNull()
@@ -47,29 +43,23 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             category = config.category,
                             useDemo = config.demo
                         )
-                        canEnterLongPosition[config.botName] = config.overTrade
-                        canEnterShortPosition[config.botName] = true
                     } else {
                         logger.info("Already in Long position")
-                        canEnterLongPosition[config.botName] = config.overTrade
-                        canEnterShortPosition[config.botName] = true
                     }
                 } else {
-                    if (canEnterLongPosition[config.botName] ?: true) {
-                        logger.info("Opening New Long position+++++++++++++++++++++++++++++++++++++++++++++++++")
-                        coreFeature.placeOrderWithTPSL(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            side = "Buy",
-                            symbol = config.symbol,
-                            quantity = config.qty,
-                            leverage = config.leverage,
-                            takeProfitPercent = config.tpPercent,
-                            stopLossPercent = config.slPercent,
-                            category = config.category,
-                            useDemo = config.demo
-                        )
-                    }
+                    logger.info("Opening New Long position+++++++++++++++++++++++++++++++++++++++++++++++++")
+                    coreFeature.placeOrderWithTPSL(
+                        apiKey = config.apiKey,
+                        secret = config.secretKey,
+                        side = "Buy",
+                        symbol = config.symbol,
+                        quantity = config.qty,
+                        leverage = config.leverage,
+                        takeProfitPercent = config.tpPercent,
+                        stopLossPercent = config.slPercent,
+                        category = config.category,
+                        useDemo = config.demo
+                    )
                 }
             }
 
@@ -89,29 +79,23 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             category = config.category,
                             useDemo = config.demo
                         )
-                        canEnterShortPosition[config.botName] = config.overTrade
-                        canEnterLongPosition[config.botName] = true
                     } else {
-                        canEnterShortPosition[config.botName] = config.overTrade
-                        canEnterLongPosition[config.botName] = true
                         logger.info("Already in Short position>>>>>>>>>>><<<<<<<<>>>>>>>>><<<<<<<>>>>>>>>>>>")
                     }
                 } else {
-                    if (canEnterShortPosition[config.botName] ?: true) {
-                        logger.info("Opening New Short position+++++++++++++++++++++++++++++++++++++++++++++++++")
-                        coreFeature.placeOrderWithTPSL(
-                            apiKey = config.apiKey,
-                            secret = config.secretKey,
-                            side = "Sell",
-                            symbol = config.symbol,
-                            quantity = config.qty,
-                            leverage = config.leverage,
-                            takeProfitPercent = config.tpPercent,
-                            stopLossPercent = config.slPercent,
-                            category = config.category,
-                            useDemo = config.demo
-                        )
-                    }
+                    logger.info("Opening New Short position+++++++++++++++++++++++++++++++++++++++++++++++++")
+                    coreFeature.placeOrderWithTPSL(
+                        apiKey = config.apiKey,
+                        secret = config.secretKey,
+                        side = "Sell",
+                        symbol = config.symbol,
+                        quantity = config.qty,
+                        leverage = config.leverage,
+                        takeProfitPercent = config.tpPercent,
+                        stopLossPercent = config.slPercent,
+                        category = config.category,
+                        useDemo = config.demo
+                    )
                 }
             }
 
