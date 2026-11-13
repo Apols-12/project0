@@ -385,8 +385,8 @@ class CoreFeature(private val httpClient: HttpClient) {
         side: String,               // "Buy" or "Sell"
         quantity: String,
         leverage: Int,
-        takeProfitPercent: Double,   // e.g., 5.0 for 5%
-        stopLossPercent: Double,     // e.g., 2.0 for 2%
+        tpPrice: Double,   // e.g., 5.0 for 5%
+        slPrice: Double,     // e.g., 2.0 for 2%
         category: String = "linear",
         useDemo: Boolean
     ) {
@@ -395,22 +395,6 @@ class CoreFeature(private val httpClient: HttpClient) {
         // 1. Set leverage first
         val leverageOk = setLeverage(apiKey = apiKey, secret = secret, symbol = symbol, category = category, leverage = leverage, baseUrl = url)
         require(leverageOk) { "Failed to set leverage" }
-
-        // 2. Get current price
-        val currentPrice = getCurrentPrice(symbol = symbol, category = category, baseUrl = url)
-
-        // 3. Calculate TP/SL prices based on percentages
-        val tpPrice = if (side.equals("Buy", ignoreCase = true)) {
-            currentPrice * (1 + takeProfitPercent / leverage)
-        } else {
-            currentPrice * (1 - takeProfitPercent / leverage)
-        }
-
-        val slPrice = if (side.equals("Buy", ignoreCase = true)) {
-            currentPrice * (1 - stopLossPercent / leverage)
-        } else {
-            currentPrice * (1 + stopLossPercent / leverage)
-        }
 
         // 4. Place market order with TP/SL attached
         val orderRequest = PlaceOrderRequest(

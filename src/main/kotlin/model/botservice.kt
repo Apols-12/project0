@@ -38,8 +38,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             symbol = config.symbol,
                             quantity = config.qty,
                             leverage = config.leverage,
-                            takeProfitPercent = config.tpPercent,
-                            stopLossPercent = config.slPercent,
+                            tpPrice = prediction.targetPrice,
+                            slPrice = prediction.stopPrice,
                             category = config.category,
                             useDemo = config.demo
                         )
@@ -55,8 +55,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         symbol = config.symbol,
                         quantity = config.qty,
                         leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
+                        tpPrice = prediction.targetPrice,
+                        slPrice = prediction.stopPrice,
                         category = config.category,
                         useDemo = config.demo
                     )
@@ -74,8 +74,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             symbol = config.symbol,
                             quantity = config.qty,
                             leverage = config.leverage,
-                            takeProfitPercent = config.tpPercent,
-                            stopLossPercent = config.slPercent,
+                            tpPrice = prediction.targetPrice,
+                            slPrice = prediction.stopPrice,
                             category = config.category,
                             useDemo = config.demo
                         )
@@ -91,8 +91,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         symbol = config.symbol,
                         quantity = config.qty,
                         leverage = config.leverage,
-                        takeProfitPercent = config.tpPercent,
-                        stopLossPercent = config.slPercent,
+                        tpPrice = prediction.targetPrice,
+                        slPrice = prediction.stopPrice,
                         category = config.category,
                         useDemo = config.demo
                     )

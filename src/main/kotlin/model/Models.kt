@@ -38,8 +38,8 @@ data class Prediction(
     val roundTripCostBps: Double,
     val netEdgeBps: Double,
     val entryPrice: Double,
-    val stopPrice: Double?,
-    val targetPrice: Double?,
+    val stopPrice: Double,
+    val targetPrice: Double,
     val asOf: Long,
     val reasons: List<String>
 )

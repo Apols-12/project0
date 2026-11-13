@@ -155,7 +155,7 @@ class SignalEngine(
     }
 
     private fun neutral(k: Kline, reason: String) = Prediction(
-        Direction.NEUTRAL, 0.0, 0.0, fees.roundTripBps, 0.0, k.close, null, null, k.openTime, listOf(reason)
+        Direction.NEUTRAL, 0.0, 0.0, fees.roundTripBps, 0.0, k.close, 0.0, 0.0, k.openTime, listOf(reason)
     )
 
     private fun f(x: Double) = String.format(Locale.ROOT, "%.2f", x)

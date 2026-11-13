@@ -50,8 +50,6 @@ data class BotConfig(
     val symbol: String,
     val qty: String,
     val leverage: Int,
-    val tpPercent: Double,
-    val slPercent: Double,
     val signalConfig: SignalConfig = SignalConfig(),
     val feeModel: FeeModel = FeeModel(),
     val apiKey: String,
