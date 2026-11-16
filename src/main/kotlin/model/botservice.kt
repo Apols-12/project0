@@ -15,7 +15,7 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
 
-        val predictor = SignalEngine(cfg = config.signalConfig, fees = config.feeModel)
+        val predictor = SignalEngine(cfg = config.signalConfig.copy(leverage = config.leverage), fees = config.feeModel)
 
         val prediction =  predictor.predict(klines)
 

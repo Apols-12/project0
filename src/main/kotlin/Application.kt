@@ -150,7 +150,7 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
-                                        leverage = 5,
+                                        leverage = 5.0,
                                         qty = "3",
                                         apiKey = "zsWR8hByEOM4xcqKJy",
                                         secretKey = "3cJsihHKkMMFsHtDiKJDAHqYB0k13NrCA81b",

@@ -49,7 +49,7 @@ data class BotConfig(
     val botName: String,
     val symbol: String,
     val qty: String,
-    val leverage: Int,
+    val leverage: Double,
     val signalConfig: SignalConfig = SignalConfig(),
     val feeModel: FeeModel = FeeModel(),
     val apiKey: String,

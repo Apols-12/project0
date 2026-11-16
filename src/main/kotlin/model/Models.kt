@@ -41,7 +41,11 @@ data class Prediction(
     val stopPrice: Double,
     val targetPrice: Double,
     val asOf: Long,
-    val reasons: List<String>
+    val reasons: List<String>,
+    val leverage: Double = 1.0,
+    val liquidationPrice: Double? = null,       // estimated isolated-margin liquidation price
+    val maxLossOnMarginPct: Double? = null,     // loss if the stop is hit, as % of margin (incl. costs)
+    val netProfitOnMarginPct: Double? = null    // gain if the target is hit, as % of margin (net of costs)
 )
 
 @Serializable
@@ -70,6 +74,9 @@ data class SignalConfig(
     val maxSignalsPerWindow: Int = 4,
     val windowBars: Int = 100,
     val allowShort: Boolean = true,
+    val leverage: Double = 1.0,                 // account leverage you will trade with
+    val maintenanceMarginRate: Double = 0.005,  // exchange maintenance margin (check your tier)
+    val maxStopToLiquidation: Double = 0.6,     // stop may use at most this share of the distance to liquidation
     val maxBars: Int = 500             // only the most recent bars are processed (bounds latency)
 ) {
     init {
@@ -82,6 +89,10 @@ data class SignalConfig(
         require(targetAtr > 0 && stopAtr > 0) { "targetAtr and stopAtr must be > 0" }
         require(edgeMultiple >= 1.0) { "edgeMultiple must be >= 1" }
         require(cooldownBars >= 0 && maxSignalsPerWindow >= 1 && windowBars >= 1) { "invalid throttle settings" }
+        require(leverage >= 1.0 && leverage <= 125.0) { "leverage must be in [1, 125]" }
+        require(maintenanceMarginRate >= 0.0 && maintenanceMarginRate < 0.1) { "maintenanceMarginRate must be in [0, 0.1)" }
+        require(1.0 / leverage > maintenanceMarginRate) { "leverage too high: liquidation distance would be <= 0" }
+        require(maxStopToLiquidation > 0.0 && maxStopToLiquidation < 1.0) { "maxStopToLiquidation must be in (0, 1)" }
         require(maxBars >= minBars) { "maxBars must be >= minBars ($minBars)" }
     }
 

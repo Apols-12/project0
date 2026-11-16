@@ -244,7 +244,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         apiKey: String,
         secret: String,
         symbol: String,
-        leverage: Int,
+        leverage: Double,
         category: String = "linear",
         baseUrl: String
     ): Boolean {
@@ -384,7 +384,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         symbol: String,
         side: String,               // "Buy" or "Sell"
         quantity: String,
-        leverage: Int,
+        leverage: Double,
         tpPrice: Double,   // e.g., 5.0 for 5%
         slPrice: Double,     // e.g., 2.0 for 2%
         category: String = "linear",

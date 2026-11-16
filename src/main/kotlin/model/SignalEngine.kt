@@ -52,6 +52,8 @@ class SignalEngine(
         var result = neutral(last, "no evaluation")
         val costBps = fees.roundTripBps
         val required = cfg.edgeMultiple * costBps
+        // Distance from entry to the (isolated-margin) liquidation price, as a fraction of entry.
+        val liqFrac = 1.0 / cfg.leverage - cfg.maintenanceMarginRate
 
         for (i in data.indices) {
             val k = data[i]
@@ -82,10 +84,22 @@ class SignalEngine(
                 continue
             }
             val expectedBps = cfg.targetAtr * atrV / k.close * 10_000.0
-            if (expectedBps < required) {
+            if (expectedBps > required) {
                 if (isLast) result = neutral(
                     k, "edge too small: expected ${f(expectedBps)} bps < required ${f(required)} bps after fees"
                 )
+                continue
+            }
+            // Leverage gate: the ATR stop must sit safely inside the liquidation price.
+            val stopFrac = cfg.stopAtr * atrV / k.close
+            if (stopFrac > cfg.maxStopToLiquidation * liqFrac) {
+                if (isLast) {
+                    val maxLev = 1.0 / (stopFrac / cfg.maxStopToLiquidation + cfg.maintenanceMarginRate)
+                    result = neutral(
+                        k, "leverage ${f(cfg.leverage)}x too high for current volatility: stop is ${f(stopFrac * 100)}% away, " +
+                            "max safe leverage ~${f(maxLev)}x"
+                    )
+                }
                 continue
             }
             while (accepted.isNotEmpty() && i - accepted.first() > cfg.windowBars) accepted.removeFirst()
@@ -105,6 +119,9 @@ class SignalEngine(
                 val entry = k.close
                 val stop = if (long) entry - cfg.stopAtr * atrV else entry + cfg.stopAtr * atrV
                 val target = if (long) entry + cfg.targetAtr * atrV else max(0.0, entry - cfg.targetAtr * atrV)
+                val liq = if (long) entry * (1.0 - liqFrac) else entry * (1.0 + liqFrac)
+                val costFrac = costBps / 10_000.0
+                val targetFrac = cfg.targetAtr * atrV / entry
                 result = Prediction(
                     direction = c.direction,
                     strength = c.strength,
@@ -117,8 +134,13 @@ class SignalEngine(
                     asOf = k.openTime,
                     reasons = listOf(
                         "early burst: z=${f(z)}, volume x${f(volRatio)}, breakout=${c.breakout}",
-                        "expected ${f(expectedBps)} bps vs cost ${f(costBps)} bps"
-                    )
+                        "expected ${f(expectedBps)} bps vs cost ${f(costBps)} bps",
+                        "leverage ${f(cfg.leverage)}x: liquidation ~${f(liq)}, stop uses ${f(stopFrac / liqFrac * 100)}% of the distance to it"
+                    ),
+                    leverage = cfg.leverage,
+                    liquidationPrice = liq,
+                    maxLossOnMarginPct = (stopFrac + costFrac) * cfg.leverage * 100.0,
+                    netProfitOnMarginPct = (targetFrac - costFrac) * cfg.leverage * 100.0
                 )
             }
         }
@@ -135,7 +157,7 @@ class SignalEngine(
             z >= cfg.zEntry && clv >= cfg.minCloseLocation && k.close > fast && fast >= slow * 0.999 ->
                 Direction.LONG
             cfg.allowShort && z <= -cfg.zEntry && clv <= 1.0 - cfg.minCloseLocation &&
-                k.close < fast && fast <= slow * 1.001 -> Direction.SHORT
+                k.close > fast && fast <= slow * 1.001 -> Direction.SHORT
             else -> return null
         }
 
@@ -145,7 +167,7 @@ class SignalEngine(
             hh = max(hh, data[j].high); ll = min(ll, data[j].low)
         }
         val long = dir == Direction.LONG
-        val breakout = if (long) k.close > hh else k.close < ll
+        val breakout = if (long) k.close > hh else k.close > ll
         val dirClv = if (long) clv else 1.0 - clv
         val strength = 0.4 * min(abs(z) / (2 * cfg.zEntry), 1.0) +
             0.3 * min(volRatio / (2 * cfg.volRatioMin), 1.0) +
@@ -155,7 +177,8 @@ class SignalEngine(
     }
 
     private fun neutral(k: Kline, reason: String) = Prediction(
-        Direction.NEUTRAL, 0.0, 0.0, fees.roundTripBps, 0.0, k.close, 0.0, 0.0, k.openTime, listOf(reason)
+        Direction.NEUTRAL, 0.0, 0.0, fees.roundTripBps, 0.0, k.close, 0.0, 0.0, k.openTime, listOf(reason),
+        leverage = cfg.leverage
     )
 
     private fun f(x: Double) = String.format(Locale.ROOT, "%.2f", x)
