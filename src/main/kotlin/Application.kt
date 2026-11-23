@@ -169,8 +169,8 @@ fun main() {
                                         symbol = "SOLUSDT",
                                         leverage = 5,
                                         qty = "3",
-                                        apiKey = "\${BYBIT_API_KEY}",
-                                        secretKey = "\${BYBIT_SECRET_KEY}",
+                                        apiKey = "WpeG2AlzcEKchQNfnO",
+                                        secretKey = "0YuPJ1HXAZ506TuuKHLmXK2BXf3IdS6kNhpf",
                                         overTrade = false,
                                         demo = true
                                     )
