@@ -4,7 +4,6 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.UUID
@@ -48,12 +47,12 @@ fun getUser(name: String): User? {
 
 fun insertUser(user: UserInsert) {
     transaction {
-        val singedPassword = sing(user.password, user.name)
+        val signedPassword = sign(user.password, user.name)
         val isNotAvaileble = Users.selectAll().where { Users.name eq user.name }.count() > 0
         if (!isNotAvaileble) {
             Users.insert {
                 it[name] = user.name
-                it[password] = singedPassword
+                it[password] = signedPassword
                 it[email] = user.email
             }
         } else {
@@ -62,7 +61,7 @@ fun insertUser(user: UserInsert) {
     }
 }
 
-fun sing(payload: String, key: String): String {
+fun sign(payload: String, key: String): String {
     val algo = "HmacShA256"
     return try {
         val mac = Mac.getInstance(algo)
@@ -77,5 +76,5 @@ fun sing(payload: String, key: String): String {
 
 fun verifyUser(name: String, password: String): Boolean {
     val user = getUser(name)
-    return user?.password.contentEquals(sing(password, name))
+    return user?.password.contentEquals(sign(password, name))
 }

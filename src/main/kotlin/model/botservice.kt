@@ -15,19 +15,18 @@ class BotService(private val networkService: NetworkService, private val coreFea
 
         logger.info("Current ${config.symbol} price is: ${klines.takeLast(1).single().close}")
 
-        val predictor = SignalEngine(cfg = config.signalConfig.copy(leverage = config.leverage), fees = config.feeModel)
-
-        val prediction =  predictor.predict(klines)
+        val predictor = CryptoPredictionEngine(signalConfig = config.signalConfig, riskConfig = config.riskConfig)
+        val prediction =  predictor.predict(klines, leverage = config.leverage) ?: return logger.info("No prediction generated for ${config.symbol} at this time.")
 
         logger.info("Prediction is: $prediction")
-        logger.info("Prediction strength: ${prediction.strength}, Stop price: ${prediction.stopPrice}, targeted price is: ${prediction.targetPrice}")
+        logger.info("Prediction strength: ${prediction.strength}, Stop price: ${prediction.stopLoss}, targeted price is: ${prediction.takeProfit}")
 
         logger.info("The smoothed Model prediction for user ${config.botName} is: ${prediction.direction.name}")
         val hasOpenPosition = coreFeature.hasOpenPosition(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo)
 
         val position = coreFeature.getOpenPositions(apiKey = config.apiKey, secret = config.secretKey, symbol = config.symbol, category = config.category, useDemo = config.demo).firstOrNull()
         when(prediction.direction) {
-            Direction.LONG -> {
+             SignalDirection.LONG -> {
                 if (hasOpenPosition) {
                     if (position!!.side != "Buy") {
                         logger.info("Signal is Buy, closing Short and opening Long position")
@@ -38,8 +37,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             symbol = config.symbol,
                             quantity = config.qty,
                             leverage = config.leverage,
-                            tpPrice = prediction.targetPrice,
-                            slPrice = prediction.stopPrice,
+                            tpPrice = prediction.takeProfit,
+                            slPrice = prediction.stopLoss,
                             category = config.category,
                             useDemo = config.demo
                         )
@@ -55,15 +54,15 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         symbol = config.symbol,
                         quantity = config.qty,
                         leverage = config.leverage,
-                        tpPrice = prediction.targetPrice,
-                        slPrice = prediction.stopPrice,
+                        tpPrice = prediction.takeProfit,
+                        slPrice = prediction.stopLoss,
                         category = config.category,
                         useDemo = config.demo
                     )
                 }
             }
 
-            Direction.SHORT -> {
+            SignalDirection.SHORT -> {
                 if (hasOpenPosition) {
                     if (position!!.side != "Sell") {
                         logger.info("Signal is Sell, closing Long and opening Short position________++++++++++_________++++++++______")
@@ -74,8 +73,8 @@ class BotService(private val networkService: NetworkService, private val coreFea
                             symbol = config.symbol,
                             quantity = config.qty,
                             leverage = config.leverage,
-                            tpPrice = prediction.targetPrice,
-                            slPrice = prediction.stopPrice,
+                            tpPrice = prediction.takeProfit,
+                            slPrice = prediction.stopLoss,
                             category = config.category,
                             useDemo = config.demo
                         )
@@ -91,15 +90,15 @@ class BotService(private val networkService: NetworkService, private val coreFea
                         symbol = config.symbol,
                         quantity = config.qty,
                         leverage = config.leverage,
-                        tpPrice = prediction.targetPrice,
-                        slPrice = prediction.stopPrice,
+                        tpPrice = prediction.takeProfit,
+                        slPrice = prediction.stopLoss,
                         category = config.category,
                         useDemo = config.demo
                     )
                 }
             }
 
-            Direction.NEUTRAL -> {
+            SignalDirection.FLAT -> {
                 logger.info("No Signal, waiting.......................................................")
             }
         }

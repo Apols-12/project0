@@ -85,13 +85,23 @@ fun main() {
     val service = BotService(networkService, coreFeature)
     val botService = BotManager(service)
     val port = System.getenv("PORT")?.toIntOrNull() ?: 5000
-    val baseUrl = System.getenv("BASE_URL") ?: "https://server_1apols.com/health"
+    val baseUrl = System.getenv("BASE_URL") ?: "https://server_1apols.com"
     val background = BackgrounWork(baseUrl, client)
 
     embeddedServer(Netty, port = port, "0.0.0.0") {
 
         install(CORS) {
-            anyHost()
+            val allowedHosts = System.getenv("ALLOWED_CORS_HOSTS")
+                ?.split(",")
+                ?.map(String::trim)
+                ?.filter(String::isNotEmpty)
+                .orEmpty()
+            if (allowedHosts.isEmpty()) {
+                allowHost("localhost", schemes = listOf("http"))
+                allowHost("127.0.0.1", schemes = listOf("http"))
+            } else {
+                allowedHosts.forEach { allowHost(it) }
+            }
             allowHeader(HttpHeaders.ContentType)
             allowHeader(HttpHeaders.Authorization)
         }
@@ -130,7 +140,8 @@ fun main() {
         }
         install(StatusPages) {
             exception<Throwable> { call, cause ->
-                call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError )
+                mu.KotlinLogging.logger("server").error(cause) { "Unhandled server exception" }
+                call.respondText(text = "Internal server error", status = HttpStatusCode.InternalServerError)
             }
         }
 
@@ -140,6 +151,12 @@ fun main() {
         routing {
             authenticate {
                 route("/bot") {
+                    get("/stop-all", {
+                        description = "Stop every running bot"
+                    }) {
+                        botService.stopAllBots()
+                        call.respondText("All bots stopped successfully", status = HttpStatusCode.OK)
+                    }
                     post("/run", {
                         description = "This endpoint allow you to run a new bot"
                         request {
@@ -150,10 +167,10 @@ fun main() {
                                     value = BotConfig(
                                         botName = "apols_bot",
                                         symbol = "SOLUSDT",
-                                        leverage = 5.0,
+                                        leverage = 5,
                                         qty = "3",
-                                        apiKey = "zsWR8hByEOM4xcqKJy",
-                                        secretKey = "3cJsihHKkMMFsHtDiKJDAHqYB0k13NrCA81b",
+                                        apiKey = "\${BYBIT_API_KEY}",
+                                        secretKey = "\${BYBIT_SECRET_KEY}",
                                         overTrade = false,
                                         demo = true
                                     )
@@ -185,7 +202,7 @@ fun main() {
                         }
                     }
 
-                    get("/stop{bot-name}", {
+                    get("/stop/{bot-name}", {
                         description = "Stop the bot"
                         request {
                             queryParameter<String>("bot-name") {
@@ -241,10 +258,6 @@ fun main() {
                 call.respondText("The bot api is running, only me can access it", status = HttpStatusCode.OK)
             }
 
-            get("/stop-all-bots") {
-                botService.stopAllBots()
-                call.respondText("All bots stopped successfully", status = HttpStatusCode.OK)
-            }
 
             get("/health") {
                 call.respond(HttpStatusCode.OK)
@@ -252,7 +265,7 @@ fun main() {
         }
         monitor.subscribe(ApplicationStopping) {
             background.stop()
-            botService.stopAllBots()
+            kotlinx.coroutines.runBlocking { botService.stopAllBots() }
         }
     }.start(wait = true)
 }

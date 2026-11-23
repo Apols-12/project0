@@ -21,7 +21,8 @@ class BackgrounWork (private val baseUrl: String, private val client: HttpClient
         scope.launch {
             while (isActive) {
                 try {
-                   val response = client.get("$baseUrl/health")
+                   val healthUrl = if (baseUrl.endsWith("/")) "${baseUrl}health" else "$baseUrl/health"
+                   val response = client.get(healthUrl)
                     logger.info("the server is up: ${response.status}")
                     delay(10.minutes)
                 } catch (e: Exception) {

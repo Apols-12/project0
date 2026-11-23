@@ -1,6 +1,7 @@
 package com.apols.model
 
-import kotlinx.serialization.Serializable
+import java.math.BigDecimal
+import java.time.Instant
 
 /** One OHLCV candle. Validated on construction, so invalid data never reaches the engine. */
 data class Kline(
@@ -23,78 +24,34 @@ data class Kline(
     }
 }
 
-enum class Direction { LONG, SHORT, NEUTRAL }
+enum class SignalDirection { LONG, SHORT, FLAT }
 
-/**
- * Result of [SignalEngine.predict], describing the state of the LAST kline.
- *
- * [strength] is a 0..1 heuristic score for ranking signals. It is NOT a calibrated probability.
- * [netEdgeBps] is the expected move minus round-trip fees and slippage.
- */
-data class Prediction(
-    val direction: Direction,
-    val strength: Double,
-    val expectedMoveBps: Double,
-    val roundTripCostBps: Double,
-    val netEdgeBps: Double,
-    val entryPrice: Double,
-    val stopPrice: Double,
-    val targetPrice: Double,
-    val asOf: Long,
-    val reasons: List<String>,
-    val leverage: Double = 1.0,
-    val liquidationPrice: Double? = null,       // estimated isolated-margin liquidation price
-    val maxLossOnMarginPct: Double? = null,     // loss if the stop is hit, as % of margin (incl. costs)
-    val netProfitOnMarginPct: Double? = null    // gain if the target is hit, as % of margin (net of costs)
-)
-
-@Serializable
-data class FeeModel(
-    val takerBps: Double = 10.0,
-    val slippageBps: Double = 2.0
+data class SignalStrength(
+    val score: Double,          // 0.0 .. 1.0
+    val tier: Tier,
 ) {
-    init { require(takerBps >= 0 && slippageBps >= 0) { "Fees must be >= 0" } }
-    val roundTripBps: Double get() = 2 * (takerBps + slippageBps)
+    enum class Tier { WEAK, MODERATE, STRONG }
 }
 
-@Serializable
-data class SignalConfig(
-    val fastPeriod: Int = 8,
-    val slowPeriod: Int = 21,
-    val atrPeriod: Int = 14,
-    val lookback: Int = 50,            // window for return / volume statistics
-    val breakoutLookback: Int = 20,    // prior-bar range used for breakout confirmation
-    val zEntry: Double = 2.0,          // return burst, in standard deviations
-    val volRatioMin: Double = 1.5,     // volume vs rolling mean
-    val minCloseLocation: Double = 0.65, // close must sit in the top (long) / bottom (short) of the bar
-    val targetAtr: Double = 2.0,
-    val stopAtr: Double = 1.5,
-    val edgeMultiple: Double = 2.5,    // expected move must be >= this x round-trip cost
-    val cooldownBars: Int = 5,
-    val maxSignalsPerWindow: Int = 4,
-    val windowBars: Int = 100,
-    val allowShort: Boolean = true,
-    val leverage: Double = 1.0,                 // account leverage you will trade with
-    val maintenanceMarginRate: Double = 0.005,  // exchange maintenance margin (check your tier)
-    val maxStopToLiquidation: Double = 0.6,     // stop may use at most this share of the distance to liquidation
-    val maxBars: Int = 500             // only the most recent bars are processed (bounds latency)
+data class Prediction(
+    val direction: SignalDirection,
+    val strength: SignalStrength,
+    val entryPrice: BigDecimal,
+    val takeProfit: BigDecimal,
+    val stopLoss: BigDecimal,
+    val riskRewardRatio: BigDecimal,
+    val atr: BigDecimal,
+    val timestamp: Instant,
+)
+
+@kotlinx.serialization.Serializable
+data class FeeModel(
+    val takerBps: Double = 10.0,
+    val slippageBps: Double = 2.0,
 ) {
     init {
-        require(fastPeriod >= 2 && fastPeriod < slowPeriod) { "need 2 <= fastPeriod < slowPeriod" }
-        require(atrPeriod >= 2) { "atrPeriod must be >= 2" }
-        require(lookback >= 10) { "lookback must be >= 10" }
-        require(breakoutLookback >= 2) { "breakoutLookback must be >= 2" }
-        require(zEntry > 0 && volRatioMin > 0) { "zEntry and volRatioMin must be > 0" }
-        require(minCloseLocation > 0.5 && minCloseLocation < 1.0) { "minCloseLocation must be in (0.5, 1)" }
-        require(targetAtr > 0 && stopAtr > 0) { "targetAtr and stopAtr must be > 0" }
-        require(edgeMultiple >= 1.0) { "edgeMultiple must be >= 1" }
-        require(cooldownBars >= 0 && maxSignalsPerWindow >= 1 && windowBars >= 1) { "invalid throttle settings" }
-        require(leverage >= 1.0 && leverage <= 125.0) { "leverage must be in [1, 125]" }
-        require(maintenanceMarginRate >= 0.0 && maintenanceMarginRate < 0.1) { "maintenanceMarginRate must be in [0, 0.1)" }
-        require(1.0 / leverage > maintenanceMarginRate) { "leverage too high: liquidation distance would be <= 0" }
-        require(maxStopToLiquidation > 0.0 && maxStopToLiquidation < 1.0) { "maxStopToLiquidation must be in (0, 1)" }
-        require(maxBars >= minBars) { "maxBars must be >= minBars ($minBars)" }
+        require(takerBps >= 0 && slippageBps >= 0) { "Fees and slippage must be non-negative" }
     }
 
-    val minBars: Int get() = maxOf(slowPeriod, lookback, breakoutLookback, atrPeriod) + 2
+    val roundTripBps: Double get() = 2.0 * (takerBps + slippageBps)
 }

@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.jetbrains.kotlinx.dl.api.inference.TensorFlowInferenceModel
 import java.io.File
+import java.math.BigDecimal
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import javax.crypto.Mac
@@ -244,7 +245,7 @@ class CoreFeature(private val httpClient: HttpClient) {
         apiKey: String,
         secret: String,
         symbol: String,
-        leverage: Double,
+        leverage: Int,
         category: String = "linear",
         baseUrl: String
     ): Boolean {
@@ -294,6 +295,8 @@ class CoreFeature(private val httpClient: HttpClient) {
 
         logger.info("Get open positions...............................................................")
 
+        logger.info("Response body: ${response.bodyAsText()}") // Log the response body for debugging
+
         val result = json.decodeFromString<BybitResponse<PositionListResult>>(response.bodyAsText())
 
         if (result.retCode != 0) {
@@ -332,7 +335,10 @@ class CoreFeature(private val httpClient: HttpClient) {
             throw Exception("Failed to fetch positions: ${result.retMsg}")
         }
         // Check if any position has size > 0 (ignoring precision, treat > 0.000001 as open)
-        return result.result.list.map { it.size }.any { it > "0.00001" }
+        return result.result.list.any {
+            val size = it.size.toBigDecimalOrNull()
+            size != null && size > BigDecimal("0.00001")
+        }
     }
 
     suspend fun closeOpenPositions(
@@ -384,9 +390,9 @@ class CoreFeature(private val httpClient: HttpClient) {
         symbol: String,
         side: String,               // "Buy" or "Sell"
         quantity: String,
-        leverage: Double,
-        tpPrice: Double,   // e.g., 5.0 for 5%
-        slPrice: Double,     // e.g., 2.0 for 2%
+        leverage: Int,
+        tpPrice: BigDecimal,   // e.g., 5.0 for 5%
+        slPrice: BigDecimal,     // e.g., 2.0 for 2%
         category: String = "linear",
         useDemo: Boolean
     ) {

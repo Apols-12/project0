@@ -49,16 +49,24 @@ data class BotConfig(
     val botName: String,
     val symbol: String,
     val qty: String,
-    val leverage: Double,
+    val leverage: Int,
     val signalConfig: SignalConfig = SignalConfig(),
-    val feeModel: FeeModel = FeeModel(),
+    val riskConfig: RiskConfig = RiskConfig(),
     val apiKey: String,
     val secretKey: String,
     val interval: String = "15",
     val useMl : Boolean = false,
     val overTrade: Boolean,
     val demo: Boolean
-)
+) {
+    init {
+        require(botName.isNotBlank()) { "botName is required" }
+        require(symbol.matches(Regex("[A-Z0-9]+"))) { "symbol must contain only uppercase letters and digits" }
+        require(qty.toBigDecimalOrNull()?.let { it > java.math.BigDecimal.ZERO } == true) { "qty must be positive" }
+        require(leverage in 1..125) { "leverage must be between 1 and 125" }
+        require(apiKey.isNotBlank() && secretKey.isNotBlank()) { "Bybit apiKey and secretKey are required" }
+    }
+}
 
 
 data class TKlines(

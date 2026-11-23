@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
@@ -36,7 +37,10 @@ class BotManager(private val service: BotService) {
 
     suspend fun startBot(config: BotConfig) {
         mutex.withLock {
-            stopBot(config.botName)
+            activeBots.remove(config.botName)?.let { oldJob ->
+                oldJob.cancel("Replacing bot")
+                oldJob.join()
+            }
             activeBots[config.botName] = scope.launch {
                 while (isActive) {
                     try {
@@ -55,17 +59,17 @@ class BotManager(private val service: BotService) {
         }
     }
 
-    fun stopBot(userId: String) {
-        activeBots[userId]?.let {
-            it.cancel("User Requested Stop")
-            activeBots.remove(userId)
-            logger.info("Bot stop successfully")
-            // We can also notify the user after that
-        }
+    suspend fun stopBot(userId: String) {
+        val oldJob = activeBots.remove(userId)
+        oldJob?.cancel("User Requested Stop")
+        oldJob?.join()
+        logger.info("Bot stop successfully")
     }
 
-    fun stopAllBots() {
-        scope.cancel("Closing all bots")
-        // We can notify users about these events too
+    suspend fun stopAllBots() {
+        val jobs = activeBots.values.toList()
+        jobs.forEach { it.cancel("Stopping all bots") }
+        jobs.joinAll()
+        activeBots.clear()
     }
 }
