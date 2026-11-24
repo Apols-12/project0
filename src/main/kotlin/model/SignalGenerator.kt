@@ -37,7 +37,7 @@ data class SignalConfig(
     // Confluence
     val rsiOversold: Double = 35.0,
     val rsiOverbought: Double = 65.0,
-    val minStrengthScore: Double = 0.45,
+    val minStrengthScore: Double = 0.35,
 )
 
 class SignalGenerator(private val config: SignalConfig = SignalConfig()) {
@@ -142,6 +142,7 @@ class SignalGenerator(private val config: SignalConfig = SignalConfig()) {
         if (rawScore < config.minStrengthScore) {
             barsSinceLastSignal++
             logger.info("Weak signal. Bars since last signal: $barsSinceLastSignal")
+            logger.info("Raw score: $rawScore")
             return null
         }
 
