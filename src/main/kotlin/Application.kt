@@ -24,6 +24,7 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
@@ -91,17 +92,10 @@ fun main() {
     embeddedServer(Netty, port = port, "0.0.0.0") {
 
         install(CORS) {
-            val allowedHosts = System.getenv("ALLOWED_CORS_HOSTS")
-                ?.split(",")
-                ?.map(String::trim)
-                ?.filter(String::isNotEmpty)
-                .orEmpty()
-            if (allowedHosts.isEmpty()) {
-                allowHost("localhost", schemes = listOf("http"))
-                allowHost("127.0.0.1", schemes = listOf("http"))
-            } else {
-                allowedHosts.forEach { allowHost(it) }
-            }
+            anyHost()
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Put)
             allowHeader(HttpHeaders.ContentType)
             allowHeader(HttpHeaders.Authorization)
         }

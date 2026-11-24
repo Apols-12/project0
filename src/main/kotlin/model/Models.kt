@@ -43,15 +43,3 @@ data class Prediction(
     val atr: BigDecimal,
     val timestamp: Instant,
 )
-
-@kotlinx.serialization.Serializable
-data class FeeModel(
-    val takerBps: Double = 10.0,
-    val slippageBps: Double = 2.0,
-) {
-    init {
-        require(takerBps >= 0 && slippageBps >= 0) { "Fees and slippage must be non-negative" }
-    }
-
-    val roundTripBps: Double get() = 2.0 * (takerBps + slippageBps)
-}
